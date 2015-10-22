@@ -1,5 +1,5 @@
-all:
+all: clean
 	gcc -o satsolv satsolv.c
 
 clean:
-	rm -f satsolv
+	rm -f satsolv *.out
