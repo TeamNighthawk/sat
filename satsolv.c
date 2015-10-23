@@ -164,49 +164,4 @@ void print_clauses(char *clauses[], int nclauses)
     
 }
 
-/**
-  * Gets the upper bound for the number of input variables from the input
-  * file.
-  *
-  * @arg fp - A pointer to a file object containing the propositional logic formulas.
-  */
-int get_nvar(FILE *fp)
-{
-
-    // will not reach this if the input is valid
-    return 0;
- 
-}
-
-/**
-  * Gets the number of clauses from the input file
-  *
-  * @arg fp - A pointer to a file object containing the propositional logic formulas.
-  */
-int get_nclauses(FILE *fp)
-{
-    char line[MAXLINE];
-    while (fgets(line, MAXLINE, fp) != NULL) {
-       if (line[0] == 'c')
-           continue;
-
-       if (line[0] == 'p') {
-            char * pch;
-            pch = strtok (line," ");
- 
-            int c = 0;
-            while (pch != NULL)
-            {
-                if (c == 3)
-                    return atoi(pch);
-
-                pch = strtok (NULL, " ");
-                c++;
-            }
-       }
-    }        
-
-    // will not reach this if the input is valid
-    return 0;
-}
 /** END HELPER FUNCTIONS **/

@@ -16,7 +16,5 @@ int solve(FILE *fp);
 /* Helper functions */
 void get_clauses(char *clauses[], FILE *fp);
 void print_clauses(char *clauses[], int nclauses);
-int get_nvar(FILE *fp);
-int get_nclauses(FILE *fp);
 
 #endif
