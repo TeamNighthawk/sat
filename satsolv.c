@@ -5,15 +5,16 @@
 
 /* Includes */
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include "satsolv.h"
 
-/* Definitions */
-#define SATISFIABLE 0
-#define UNSATISFIABLE 1
-#define UNKNOWN 2
-#define ERROR 3
-#define DEBUG 1
-
-int solve(FILE *fp);
+// represents a single boolean variable in a clause
+struct boolvar {
+    unsigned short id;
+    char val;
+    char guess;
+};
 
 int main(int argc, char **argv)
 {
@@ -37,7 +38,8 @@ int main(int argc, char **argv)
         printf("ERROR\n");
         return 0;
     }
-
+ 
+    
     /* invoke the solver and print out the result */
     int res = solve(fp);
     switch(res) {
@@ -54,6 +56,7 @@ int main(int argc, char **argv)
             printf("ERROR\n");
     }
 
+    fclose(fp);
     return 0;
 }
 
@@ -72,6 +75,138 @@ int main(int argc, char **argv)
   */
 int solve(FILE *fp)
 {
-    /* otherwise the result is unknown */ 
+
+    // get the nvar and nclauses values from the input file
+    int nvar, nclauses; 
+    char line[MAXLINE];
+    while (fgets(line, MAXLINE, fp) != NULL) { 
+       if (line[0] == 'p') {
+            char * pch;
+            pch = strtok (line," ");
+ 
+            int c = 0; 
+            while (pch != NULL)
+            {
+                if (c == 2)
+                    nvar = atoi(pch);
+                
+                if (c == 3) 
+                    nclauses = atoi(pch);
+
+                pch = strtok (NULL, " ");
+                c++;
+            }
+            break;
+       }
+    }
+    
+    if (DEBUG) {
+        printf("nvar (%d)\n", nvar);
+        printf("nclauses (%d)\n", nclauses);
+    }
+
+    // initialize the stack structure
+    struct boolvar varstack[nvar];
+    int top = 0;
+
+    // create a structure to keep track of assigned variables
+    int assigned[nvar];
+
+    // get the clauses from the input file
+    char *clauses[nclauses];  
+    int i;
+    for (i = 0; i < nclauses; i++)
+        clauses[i] = malloc(MAXLINE * sizeof(char));
+    get_clauses(clauses, fp);
+    if (DEBUG) print_clauses(clauses, nclauses);
+
+    // otherwise the result is unknown
     return UNKNOWN;
 }
+
+/** HELPER FUNCTIONS **/
+
+/**
+  * Parses the propositional logic clauses in the input file into an array of clauses, where
+  * each entry in the array is an array of characters representing that clause.
+  *
+  * For example, the propositional logic formula:
+  * 
+  * (a | b) & (b | c)
+  * 
+  * is composed of two clauses "(a | b)" and "(b | c)". This function would return an array like so:
+  *
+  * [0] -> "(a | b)"
+  * [1] -> "(b | c)"
+  */
+void get_clauses(char *clauses[], FILE *fp)
+{
+    int i;
+    char line[MAXLINE];
+    while (fgets(line, MAXLINE, fp) != NULL) {
+        if (line[0] == 'c' || line[0] == 'p')
+            continue; 
+
+        strcpy(clauses[i++], strtok(line, "\n")); 
+    }
+}    
+
+/**
+  * Prints the clauses contained in the array of clauses.
+  */
+void print_clauses(char *clauses[], int nclauses)
+{
+   printf("Clauses: \n");
+
+   int i;
+   for (i = 0; i < nclauses; i++)
+       printf("%s\n", clauses[i]); 
+    
+}
+
+/**
+  * Gets the upper bound for the number of input variables from the input
+  * file.
+  *
+  * @arg fp - A pointer to a file object containing the propositional logic formulas.
+  */
+int get_nvar(FILE *fp)
+{
+
+    // will not reach this if the input is valid
+    return 0;
+ 
+}
+
+/**
+  * Gets the number of clauses from the input file
+  *
+  * @arg fp - A pointer to a file object containing the propositional logic formulas.
+  */
+int get_nclauses(FILE *fp)
+{
+    char line[MAXLINE];
+    while (fgets(line, MAXLINE, fp) != NULL) {
+       if (line[0] == 'c')
+           continue;
+
+       if (line[0] == 'p') {
+            char * pch;
+            pch = strtok (line," ");
+ 
+            int c = 0;
+            while (pch != NULL)
+            {
+                if (c == 3)
+                    return atoi(pch);
+
+                pch = strtok (NULL, " ");
+                c++;
+            }
+       }
+    }        
+
+    // will not reach this if the input is valid
+    return 0;
+}
+/** END HELPER FUNCTIONS **/
