@@ -19,8 +19,8 @@ class SatFileInstance(object):
             meeting the criteria passed in.
 
         literal_count -- The maximum number of literals to be used.
+                (note:  This does not guarantee that all literals will be used)
         clause_count -- The maximum number of clauses to be used.
-            (Note:  These do not guarantee that this many will be used)
         """
         self.literal_count = literal_count
         self.clause_count = clause_count
@@ -40,17 +40,14 @@ class SatFileInstance(object):
         for i in range(0, self.clause_count):
             current_file.write(self.create_clause())
         current_file.close()
+        #increment the counter for the next file to be created of this type
+        self.counter += 1
         return filename
     def create_clause(self):
         """
         Construct a clause:
-        Although a clause can be of arbitrary length, It is not useful in testing
-        if the majority of clauses produced are always true or contain redundancy.
-        To avoid this I have made the assumption that no no Literals appear twice
-            -- this prevents redundancy (e.g. 1 1 2 2 -> 1 2)
-            -- It is also redundant to have -1 1 as this case could just as easily
-                be represented by the lack of the literal as it does not matter if
-                the literal is true or false
+        A clause is a set of literals and no repeats are allowed.  Each literal
+        is randomly negated.
         """
         #create list of literals to be used in this clause
         literals = random.sample(self.literal_list, random.randint(1, self.literal_count -1))
