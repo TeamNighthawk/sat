@@ -144,6 +144,8 @@ long int convert_to_int(char * pch){
     long int val;
     errno = 0;
     val = strtol(pch, &end, 10);
+    /*the \n check is because the line ends in a \n and it will be stored in the end pointer as invalid but the number itself
+      is not invalid*/
     if(errno || (strcmp(end, "\0") && strcmp(end, "\n"))) {
       printf(ERROR_STRING);
       exit(0);
