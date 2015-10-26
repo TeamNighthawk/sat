@@ -7,6 +7,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h> 
+#include <assert.h>
 #include "satsolv.h"
 
 // represents a single boolean variable in a clause
@@ -38,6 +40,8 @@ int main(int argc, char **argv)
         printf("ERROR\n");
         return 0;
     }
+
+    pre_process(fp);
  
     
     /* invoke the solver and print out the result */
@@ -58,6 +62,93 @@ int main(int argc, char **argv)
 
     fclose(fp);
     return 0;
+}
+
+void pre_process(FILE *fp) {
+    long int nvar, nclauses; 
+    char line[MAXLINE];
+    int outerCount = 0;
+    while (fgets(line, MAXLINE, fp) != NULL) { 
+        /*Skip the comments*/
+        if(line[0] == 'c'){
+            continue;
+        } else if (line[0] == 'p') { /*Get the nbvar and nbclause args*/
+            char * pch;
+            pch = strtok (line," ");
+
+            int c = 0; 
+            while (pch != NULL){
+              if (c == 2)
+                  nvar = convert_to_int(pch);
+
+              if (c == 3) 
+                  nclauses = convert_to_int(pch);
+
+              pch = strtok (NULL, " ");
+              c++;
+          }
+        } else{ /*This is an argument clause*/
+          char *var;
+          long int varList[MAXLINE] = {0}; /*Initialize all values to 0*/
+          int innerCount;
+          long int numVal;
+        /*convert line into array*/
+          outerCount++;
+          var = strtok(line, " ");
+          while(var != NULL){
+            numVal = convert_to_int(var);
+
+            /*End of line*/
+            if(numVal == 0){
+                break;
+            }
+
+            /*If the number in the clause is greater than what the pcf line told us then file is ill formatted*/
+            if(numVal > nvar){
+                printf(ERROR_STRING);
+                exit(0);
+            }
+            innerCount = 0;
+            while(varList[innerCount] != 0){
+                /*Cant have duplicates and can't have a neg and pos of same number in same line*/
+                if(numVal == varList[innerCount] || (numVal*-1) == varList[innerCount]){
+                    printf(ERROR_STRING);
+                    exit(0);
+                }
+                innerCount++;
+            }
+            /*we passed all error checking for this value so add it to our list*/
+            varList[innerCount] = numVal;
+            
+            var = strtok(NULL, " ");
+        }
+
+
+
+    }
+}
+
+    /*If we have more arg lines than what pcf told us then bad file*/
+    if(outerCount != nclauses){
+        printf(ERROR_STRING);
+        exit(0);
+    }
+}
+
+/*Helper to convert string to long int and do error checking to make sure we have an int
+  If not print error and exit program */
+long int convert_to_int(char * pch){
+    /*NULL check on pointer*/
+    assert(pch != 0);
+    char *end = "\0";
+    long int val;
+    errno = 0;
+    val = strtol(pch, &end, 10);
+    if(errno || (strcmp(end, "\0") && strcmp(end, "\n"))) {
+      printf(ERROR_STRING);
+      exit(0);
+    }
+    return val;
 }
 
 /**
