@@ -203,7 +203,8 @@ int solve(FILE *fp)
     int top = 0;
 
     // create a structure to keep track of assigned variables
-    int assigned[nvar];
+    int *assigned = calloc(nvar, sizeof(int));
+    if (DEBUG) print_assigned(assigned, nvar);
 
     // get the clauses from the input file
     char *clauses[nclauses];  
@@ -212,6 +213,14 @@ int solve(FILE *fp)
         clauses[i] = malloc(MAXLINE * sizeof(char));
     get_clauses(clauses, fp);
     if (DEBUG) print_clauses(clauses, nclauses);
+
+    is_unitclause(clauses[0], assigned);
+
+    // cleanup
+    //free(varstack);
+    free(assigned);
+    for (i = 0; i < nclauses; i++)
+        free(clauses[i]);
 
     // otherwise the result is unknown
     return UNKNOWN;
@@ -255,6 +264,43 @@ void print_clauses(char *clauses[], int nclauses)
    for (i = 0; i < nclauses; i++)
        printf("%s\n", clauses[i]); 
     
+}
+
+/**
+  * Prints the assigned variables in the assigned array.
+  */
+void print_assigned(int assigned[], int nvar)
+{
+    printf("Assigned variables:\n");
+
+    int i;
+    for (i = 0; i < nvar; i++)
+        printf("%d ", assigned[i]);
+    printf("\n");
+}
+
+/**
+  * Returns True if supplied clause is a unit clause. False otherwise.
+  *
+  * A clause is said to be a unit clause if all but 1 variable is assigned
+  * in the clause and the clause is unsatisfied. 
+  */
+int is_unitclause(char *clause, int *assigned)
+{
+    int cond = 0;
+
+    int var;
+    char *pch;
+    pch = strtok(clause, " ");
+    while (pch != NULL) {
+        var = atoi(pch);
+        pch = strtok(NULL, " ");
+    }
+
+    if (cond) 
+        return 1;
+    else
+        return 0;
 }
 
 /** END HELPER FUNCTIONS **/
