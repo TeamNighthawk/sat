@@ -129,13 +129,13 @@ void pre_process(FILE *fp) {
                 // get the next token in the clause
                 var = strtok(NULL, " ");
             }
-        }
-    }
 
-    /* If we there were not exactly the right amount of clauses, then the file is ill formatted */
-    if(outerCount != nclauses) {
-        printf(ERROR_STRING);
-        exit(0);
+            /* If we there were not exactly the right amount of clauses, then the file is ill formatted */
+            if(outerCount != nclauses) {
+                printf(ERROR_STRING);
+                exit(0);
+            }
+        }
     }
 }
 
