@@ -69,6 +69,7 @@ void pre_process(FILE *fp) {
 
     long int nvar, nclauses;
     char line[MAXLINE];
+    int clauseCount = 0;
     while (fgets(line, MAXLINE, fp) != NULL) {
         /* Skip the comments */
         if(line[0] == 'c') {
@@ -91,14 +92,12 @@ void pre_process(FILE *fp) {
         } else { /* assume an argument clause and check its correctness */
             char *var;
             long int varList[MAXLINE] = {0}; /* Initialize all values to 0 */
-            int outerCount = 0;
             int innerCount = 0;
             long int numVal;
-
+	    clauseCount++;
             /* convert line into array */
             var = strtok(line, " ");
             while(var != NULL) {
-                outerCount++;
                 numVal = convert_to_int(var);
 
                 /* Account for end of line */
@@ -130,13 +129,16 @@ void pre_process(FILE *fp) {
                 var = strtok(NULL, " ");
             }
 
-            /* If we there were not exactly the right amount of clauses, then the file is ill formatted */
-            if(outerCount != nclauses) {
-                printf(ERROR_STRING);
-                exit(0);
-            }
         }
+
+
     }
+    /* If we there were not exactly the right amount of clauses, then the file is ill formatted */
+    if(clauseCount != nclauses) {
+      printf(ERROR_STRING);
+      exit(0);
+    }
+    
 }
 
 /**
