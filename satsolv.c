@@ -95,6 +95,7 @@ void pre_process(FILE *fp) {
             int innerCount = 0;
             long int numVal;
 	    clauseCount++;
+
             /* convert line into array */
             var = strtok(line, " ");
             while(var != NULL) {
@@ -133,7 +134,8 @@ void pre_process(FILE *fp) {
 
 
     }
-    /* If we there were not exactly the right amount of clauses, then the file is ill formatted */
+
+    /* If we there was *not* exactly the right amount of clauses, then the file is ill formatted */
     if(clauseCount != nclauses) {
       printf(ERROR_STRING);
       exit(0);
@@ -181,6 +183,8 @@ int solve(FILE *fp)
         clauses[i] = malloc(MAXLINE * sizeof(char));
     get_clauses(clauses, fp);
     if (DEBUG) print_clauses(clauses, nclauses);
+
+    
 
     // cleanup
     free(assigned);
@@ -290,20 +294,28 @@ void get_fileparams(FILE *fp, int *nvar, int *nclauses)
   */
 int is_unitclause(char *clause, int *assigned)
 {
-    int cond = 0;
 
-    int var;
+    /* iterate over each of the variables in the clause incrementing 'nvars' each time.
+       if the variable being processed is assigned, then increment 'cnt' by 1. */
+    int var, cnt, sat;
+    int nvars = 0;
     char *pch;
     pch = strtok(clause, " ");
     while (pch != NULL) {
         var = atoi(pch);
+        cnt += assigned[var]; 
+        sat |= assigned[var];
+        nvars++;
         pch = strtok(NULL, " ");
     }
 
-    if (cond)
-        return 1;
-    else
+    // if there was *not* exactly one variable unassigned, then the clause is not a unit clause
+    if (cnt != nvars -1)
         return 0;
+    else {
+        // otherwise return 0 if the clause is already satisfied, or 1 if it is not satisfied
+        return sat ? 0 : 1;
+    }
 }
 
 /**
