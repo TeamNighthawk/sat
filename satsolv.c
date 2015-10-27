@@ -66,68 +66,74 @@ int main(int argc, char **argv)
 }
 
 void pre_process(FILE *fp) {
+
     long int nvar, nclauses;
     char line[MAXLINE];
-    int outerCount = 0;
     while (fgets(line, MAXLINE, fp) != NULL) {
-        /*Skip the comments*/
-        if(line[0] == 'c'){
+        /* Skip the comments */
+        if(line[0] == 'c') {
             continue;
-        } else if (line[0] == 'p') { /*Get the nbvar and nbclause args*/
+        } else if (line[0] == 'p') { /* Get the nbvar and nbclause args */
             char * pch;
             pch = strtok (line," ");
 
             int c = 0;
-            while (pch != NULL){
-              if (c == 2)
-                  nvar = convert_to_int(pch);
+            while (pch != NULL) {
+                if (c == 2)
+                    nvar = convert_to_int(pch);
 
-              if (c == 3)
-                  nclauses = convert_to_int(pch);
+                if (c == 3)
+                    nclauses = convert_to_int(pch);
 
-              pch = strtok (NULL, " ");
-              c++;
-          }
-        } else{ /*This is an argument clause*/
-          char *var;
-          long int varList[MAXLINE] = {0}; /*Initialize all values to 0*/
-          int innerCount;
-          long int numVal;
-        /*convert line into array*/
-          outerCount++;
-          var = strtok(line, " ");
-          while(var != NULL) {
-            numVal = convert_to_int(var);
-
-            /*End of line*/
-            if(numVal == 0){
-                break;
+                pch = strtok (NULL, " ");
+                c++;
             }
+        } else { /* assume an argument clause and check its correctness */
+            char *var;
+            long int varList[MAXLINE] = {0}; /* Initialize all values to 0 */
+            int outerCount = 0;
+            int innerCount = 0;
+            long int numVal;
 
-            /*If the number in the clause is greater than what the pcf line told us then file is ill formatted*/
-            if(numVal > nvar){
-                printf(ERROR_STRING);
-                exit(0);
-            }
-            innerCount = 0;
-            while(varList[innerCount] != 0){
-                /*Cant have duplicates and can't have a neg and pos of same number in same line*/
-                if(numVal == varList[innerCount] || (numVal*-1) == varList[innerCount]){
+            /* convert line into array */
+            var = strtok(line, " ");
+            while(var != NULL) {
+                outerCount++;
+                numVal = convert_to_int(var);
+
+                /* Account for end of line */
+                if(numVal == 0) {
+                    break;
+                }
+
+                /* If the number in the clause is not between -nbvar and nbvar then file is ill formatted */
+                if(numVal < -nvar || numVal > nvar) {
                     printf(ERROR_STRING);
                     exit(0);
                 }
-                innerCount++;
-            }
-                /*we passed all error checking for this value so add it to our list*/
+
+                innerCount = 0;
+                while(varList[innerCount++] != 0) {
+                    /* Cant have duplicates and can't have opposite literals i and -i simultaneously */
+                    int dup = numVal == varList[innerCount];
+                    int opposite_lit = (numVal*-1) == varList[innerCount];
+                    if(dup || opposite_lit) {
+                        printf(ERROR_STRING);
+                        exit(0);
+                    }
+                }
+
+                /* Otherwise we passed all error checking for this value so add it to our list */
                 varList[innerCount] = numVal;
 
+                // get the next token in the clause
                 var = strtok(NULL, " ");
             }
         }
     }
 
-    /*If we have more arg lines than what pcf told us then bad file*/
-    if(outerCount != nclauses){
+    /* If we there were not exactly the right amount of clauses, then the file is ill formatted */
+    if(outerCount != nclauses) {
         printf(ERROR_STRING);
         exit(0);
     }
