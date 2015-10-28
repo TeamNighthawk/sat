@@ -1,6 +1,8 @@
 #ifndef SATSOLV_H
 #define SATSOLV_H
 
+#include <stdbool.h>
+
 /* Definitions */
 #define SATISFIABLE 0
 #define UNSATISFIABLE 1
@@ -13,6 +15,22 @@
 #define UNSAT_STRING "UNSATISFIABLE\n"
 #define UNKNOWN_STRING "UNKNOWN\n"
 #define ERROR_STRING "ERROR\n" // define the error string
+
+typedef struct {
+        unsigned short id;
+        bool sign;
+} literal;
+
+typedef struct {
+       unsigned short length;
+       literal *lits;
+} clause;
+
+typedef struct {
+       unsigned short nvars;
+       unsigned short nclauses;
+       clause *clauses;
+} formula;
 
 /* Core algorithm */
 int solve(FILE *fp);
