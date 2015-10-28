@@ -11,13 +11,6 @@
 #include <assert.h>
 #include "satsolv.h"
 
-// represents a single boolean variable in a clause
-struct boolvar {
-    unsigned short id;
-    char val;
-    char guess;
-};
-
 int main(int argc, char **argv)
 {
     /* if an incorrect number of arguments was supplied, simply
@@ -41,8 +34,10 @@ int main(int argc, char **argv)
         return 0;
     }
 
+    formula form;
+
     /* validate the input file */
-    pre_process(fp);
+    pre_process(fp, &form);
 
     /* invoke the solver and print out the result */
     int res = solve(fp);
@@ -65,7 +60,7 @@ int main(int argc, char **argv)
     return 0;
 }
 
-void pre_process(FILE *fp) {
+void pre_process(FILE *fp, formula *form) {
 
     long int nvar, nclauses;
     char line[MAXLINE];
@@ -140,7 +135,7 @@ void pre_process(FILE *fp) {
       printf(ERROR_STRING);
       exit(0);
     }
-    
+
 }
 
 /**
@@ -169,7 +164,7 @@ int solve(FILE *fp)
     }
 
     // initialize the stack structure
-    struct boolvar varstack[nvar];
+    //struct boolvar varstack[nvar];
     int top = 0;
 
     // create a structure to keep track of assigned variables
@@ -184,7 +179,7 @@ int solve(FILE *fp)
     get_clauses(clauses, fp);
     if (DEBUG) print_clauses(clauses, nclauses);
 
-    
+
 
     // cleanup
     free(assigned);
@@ -303,7 +298,7 @@ int is_unitclause(char *clause, int *assigned)
     pch = strtok(clause, " ");
     while (pch != NULL) {
         var = atoi(pch);
-        cnt += assigned[var]; 
+        cnt += assigned[var];
         sat |= assigned[var];
         nvars++;
         pch = strtok(NULL, " ");

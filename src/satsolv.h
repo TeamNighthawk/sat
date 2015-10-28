@@ -42,7 +42,7 @@ void print_assigned(int assigned[], int nvar);
 void get_fileparams(FILE *fp, int *, int *);
 int is_unitclause(char *, int assigned[]);
 
-void pre_process(FILE *fp);
+void pre_process(FILE *fp, formula *);
 long int convert_to_int(char *pch);
 
 #endif
