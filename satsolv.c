@@ -99,7 +99,9 @@ void pre_process(FILE *fp) {
                 c++;
             }
 
-            if(nvar > MAXCLAUSES || nclauses > MAXCLAUSES){
+            /*If nvar or nclauses is > than 65536 then problem or if the number of items on p line != 3
+            then problem*/
+            if(nvar > MAXCLAUSES || nclauses > MAXCLAUSES || c != 3){
                 printf(ERROR_STRING);
                 exit(0);
             }
