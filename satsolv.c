@@ -18,6 +18,9 @@ struct boolvar {
     char guess;
 };
 
+/*globals*/
+long int nvar, nclauses;
+
 int main(int argc, char **argv)
 {
     /* if an incorrect number of arguments was supplied, simply
@@ -67,19 +70,25 @@ int main(int argc, char **argv)
 
 void pre_process(FILE *fp) {
 
-    long int nvar, nclauses;
     char line[MAXLINE];
     int clauseCount = 0;
+    int containsPLine = 0;
     while (fgets(line, MAXLINE, fp) != NULL) {
         /* Skip the comments */
         if(line[0] == 'c') {
             continue;
         } else if (line[0] == 'p') { /* Get the nbvar and nbclause args */
+
             char * pch;
             pch = strtok (line," ");
 
             int c = 0;
             while (pch != NULL) {
+                if(c == 1 && strcmp(pch, "cnf") != 0){
+                    printf(ERROR_STRING);
+                    exit(0);
+                }
+
                 if (c == 2)
                     nvar = convert_to_int(pch);
 
@@ -89,12 +98,26 @@ void pre_process(FILE *fp) {
                 pch = strtok (NULL, " ");
                 c++;
             }
+
+            /*If nvar or nclauses is > than 65536 then problem or if the number of items on p line != 3
+            then problem*/
+            if(nvar > MAXCLAUSES || nclauses > MAXCLAUSES || c != 4){
+                printf(ERROR_STRING);
+                exit(0);
+            }
+            containsPLine = 1;
         } else { /* assume an argument clause and check its correctness */
             char *var;
             long int varList[MAXLINE] = {0}; /* Initialize all values to 0 */
             int innerCount = 0;
             long int numVal;
-	    clauseCount++;
+	        clauseCount++;
+
+            /*if we don't have a p line or an arg line comes before p line there is a problem w/ file*/
+            if(!containsPLine){
+                printf(ERROR_STRING);
+                exit(0);
+            }
 
             /* convert line into array */
             var = strtok(line, " ");
@@ -159,22 +182,22 @@ void pre_process(FILE *fp) {
 int solve(FILE *fp)
 {
 
-    // get the nvar and nclauses values from the input file
-    int nvar, nclauses;
-    get_fileparams(fp, &nvar, &nclauses);
-
     if (DEBUG) {
-        printf("nvar (%d)\n", nvar);
-        printf("nclauses (%d)\n", nclauses);
+        printf("nvar (%ld)\n", nvar);
+        printf("nclauses (%ld)\n", nclauses);
     }
 
     // initialize the stack structure
     struct boolvar varstack[nvar];
     int top = 0;
 
-    // create a structure to keep track of assigned variables
+    // create a structure to keep track of whether or not a 
+		// variable is assigned as well as structure to keep 
+		// track of variable values
     int *assigned = calloc(nvar, sizeof(int));
-    if (DEBUG) print_assigned(assigned, nvar);
+    int *vals = calloc(nvar, sizeof(int));
+		if (DEBUG) print_assigned(assigned, nvar);
+		if (DEBUG) print_values(vals, nvar);
 
     // get the clauses from the input file
     char *clauses[nclauses];
@@ -238,7 +261,7 @@ void print_clauses(char *clauses[], int nclauses)
 }
 
 /**
-  * Prints the assigned variables in the assigned array.
+  * prints whether a variable is assigned in the assigned array.
   */
 void print_assigned(int assigned[], int nvar)
 {
@@ -247,6 +270,19 @@ void print_assigned(int assigned[], int nvar)
     int i;
     for (i = 0; i < nvar; i++)
         printf("%d ", assigned[i]);
+    printf("\n");
+}
+
+/**
+  * prints the assigned variables in the values array.
+  */
+void print_values(int vals[], int nvar)
+{
+    printf("variable values:\n");
+
+    int i;
+    for (i = 0; i < nvar; i++)
+        printf("%d ", vals[i]);
     printf("\n");
 }
 
@@ -292,7 +328,7 @@ void get_fileparams(FILE *fp, int *nvar, int *nclauses)
   * A clause is said to be a unit clause if all but 1 variable is assigned
   * in the clause and the clause is unsatisfied.
   */
-int is_unitclause(char *clause, int *assigned)
+int is_unitclause(char *clause, int *assigned, int *vals)
 {
 
     /* iterate over each of the variables in the clause incrementing 'nvars' each time.
@@ -303,9 +339,14 @@ int is_unitclause(char *clause, int *assigned)
     pch = strtok(clause, " ");
     while (pch != NULL) {
         var = atoi(pch);
-        cnt += assigned[var]; 
-        sat |= assigned[var];
-        nvars++;
+        
+				if(assigned[var])
+				{
+					cnt += 1;
+					sat |= vals[var];
+				}
+        
+				nvars++;
         pch = strtok(NULL, " ");
     }
 
@@ -329,8 +370,8 @@ long int convert_to_int(char * pch){
     long int val;
     errno = 0;
     val = strtol(pch, &end, 10);
-    /*the \n check is because the line ends in a \n and it will be stored in the end pointer as invalid but the number itself
-    is not invalid*/
+    /*the \n check is because the line ends in a \n and it will be stored in the end pointer as invalid but the 
+    number itself is not invalid*/
     if(errno || (strcmp(end, "\0") && strcmp(end, "\n"))) {
         printf(ERROR_STRING);
         exit(0);
