@@ -172,9 +172,13 @@ int solve(FILE *fp)
     struct boolvar varstack[nvar];
     int top = 0;
 
-    // create a structure to keep track of assigned variables
+    // create a structure to keep track of whether or not a 
+		// variable is assigned as well as structure to keep 
+		// track of variable values
     int *assigned = calloc(nvar, sizeof(int));
-    if (DEBUG) print_assigned(assigned, nvar);
+    int *vals = calloc(nvar, sizeof(int));
+		if (DEBUG) print_assigned(assigned, nvar);
+		if (DEBUG) print_values(vals, nvar);
 
     // get the clauses from the input file
     char *clauses[nclauses];
@@ -238,7 +242,7 @@ void print_clauses(char *clauses[], int nclauses)
 }
 
 /**
-  * Prints the assigned variables in the assigned array.
+  * prints whether a variable is assigned in the assigned array.
   */
 void print_assigned(int assigned[], int nvar)
 {
@@ -247,6 +251,19 @@ void print_assigned(int assigned[], int nvar)
     int i;
     for (i = 0; i < nvar; i++)
         printf("%d ", assigned[i]);
+    printf("\n");
+}
+
+/**
+  * prints the assigned variables in the values array.
+  */
+void print_values(int vals[], int nvar)
+{
+    printf("variable values:\n");
+
+    int i;
+    for (i = 0; i < nvar; i++)
+        printf("%d ", vals[i]);
     printf("\n");
 }
 
@@ -292,7 +309,7 @@ void get_fileparams(FILE *fp, int *nvar, int *nclauses)
   * A clause is said to be a unit clause if all but 1 variable is assigned
   * in the clause and the clause is unsatisfied.
   */
-int is_unitclause(char *clause, int *assigned)
+int is_unitclause(char *clause, int *assigned, int *vals)
 {
 
     /* iterate over each of the variables in the clause incrementing 'nvars' each time.
@@ -303,9 +320,14 @@ int is_unitclause(char *clause, int *assigned)
     pch = strtok(clause, " ");
     while (pch != NULL) {
         var = atoi(pch);
-        cnt += assigned[var]; 
-        sat |= assigned[var];
-        nvars++;
+        
+				if(assigned[var])
+				{
+					cnt += 1;
+					sat |= vals[var];
+				}
+        
+				nvars++;
         pch = strtok(NULL, " ");
     }
 

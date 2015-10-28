@@ -21,8 +21,9 @@ int solve(FILE *fp);
 void get_clauses(char *clauses[], FILE *fp);
 void print_clauses(char *clauses[], int nclauses);
 void print_assigned(int assigned[], int nvar);
+void print_values(int vals[], int nvar);
 void get_fileparams(FILE *fp, int *, int *);
-int is_unitclause(char *, int assigned[]);
+int is_unitclause(char *, int assigned[], int vals[]);
 
 void pre_process(FILE *fp);
 long int convert_to_int(char *pch);
