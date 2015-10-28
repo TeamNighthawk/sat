@@ -18,6 +18,9 @@ struct boolvar {
     char guess;
 };
 
+/*globals*/
+long int nvar, nclauses;
+
 int main(int argc, char **argv)
 {
     /* if an incorrect number of arguments was supplied, simply
@@ -67,19 +70,25 @@ int main(int argc, char **argv)
 
 void pre_process(FILE *fp) {
 
-    long int nvar, nclauses;
     char line[MAXLINE];
     int clauseCount = 0;
+    int containsPLine = 0;
     while (fgets(line, MAXLINE, fp) != NULL) {
         /* Skip the comments */
         if(line[0] == 'c') {
             continue;
         } else if (line[0] == 'p') { /* Get the nbvar and nbclause args */
+
             char * pch;
             pch = strtok (line," ");
 
             int c = 0;
             while (pch != NULL) {
+                if(c == 1 && strcmp(pch, "cnf") != 0){
+                    printf(ERROR_STRING);
+                    exit(0);
+                }
+
                 if (c == 2)
                     nvar = convert_to_int(pch);
 
@@ -89,12 +98,24 @@ void pre_process(FILE *fp) {
                 pch = strtok (NULL, " ");
                 c++;
             }
+
+            if(nvar > MAXCLAUSES || nclauses > MAXCLAUSES){
+                printf(ERROR_STRING);
+                exit(0);
+            }
+            containsPLine = 1;
         } else { /* assume an argument clause and check its correctness */
             char *var;
             long int varList[MAXLINE] = {0}; /* Initialize all values to 0 */
             int innerCount = 0;
             long int numVal;
-	    clauseCount++;
+	        clauseCount++;
+
+            /*if we don't have a p line or an arg line comes before p line there is a problem w/ file*/
+            if(!containsPLine){
+                printf(ERROR_STRING);
+                exit(0);
+            }
 
             /* convert line into array */
             var = strtok(line, " ");
@@ -329,8 +350,8 @@ long int convert_to_int(char * pch){
     long int val;
     errno = 0;
     val = strtol(pch, &end, 10);
-    /*the \n check is because the line ends in a \n and it will be stored in the end pointer as invalid but the number itself
-    is not invalid*/
+    /*the \n check is because the line ends in a \n and it will be stored in the end pointer as invalid but the 
+    number itself is not invalid*/
     if(errno || (strcmp(end, "\0") && strcmp(end, "\n"))) {
         printf(ERROR_STRING);
         exit(0);

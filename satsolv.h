@@ -8,7 +8,7 @@
 #define ERROR 3
 #define DEBUG 1     // enables debugging output
 #define MAXLINE 256 // maximum length of a line
-#define MAXCLAUSES 256 // maximum number of clauses in a formula
+#define MAXCLAUSES 65536 // maximum number of clauses in a formula
 #define SAT_STRING "SATISFIABLE\n"
 #define UNSAT_STRING "UNSATISFIABLE\n"
 #define UNKNOWN_STRING "UNKNOWN\n"
