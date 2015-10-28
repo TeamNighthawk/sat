@@ -101,7 +101,7 @@ void pre_process(FILE *fp) {
 
             /*If nvar or nclauses is > than 65536 then problem or if the number of items on p line != 3
             then problem*/
-            if(nvar > MAXCLAUSES || nclauses > MAXCLAUSES || c != 3){
+            if(nvar > MAXCLAUSES || nclauses > MAXCLAUSES || c != 4){
                 printf(ERROR_STRING);
                 exit(0);
             }
@@ -182,13 +182,9 @@ void pre_process(FILE *fp) {
 int solve(FILE *fp)
 {
 
-    // get the nvar and nclauses values from the input file
-    int nvar, nclauses;
-    get_fileparams(fp, &nvar, &nclauses);
-
     if (DEBUG) {
-        printf("nvar (%d)\n", nvar);
-        printf("nclauses (%d)\n", nclauses);
+        printf("nvar (%ld)\n", nvar);
+        printf("nclauses (%ld)\n", nclauses);
     }
 
     // initialize the stack structure
