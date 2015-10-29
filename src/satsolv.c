@@ -159,8 +159,11 @@ int solve(formula *form)
         printf("nclauses (%d)\n", form->nclauses);
     }
 
-    int assigned[form->nvars];
-    int vals[form->nvars];
+    // create the structures to store the state of the
+    // algorithm
+    bool assigned[form->nvars];
+    bool vals[form->nvars];
+    stack s[form->nvars];
 
     // foreach clause in formula
     int i;
@@ -170,6 +173,8 @@ int solve(formula *form)
         literal *lp;
         if ((lp = is_unitclause(&form->clauses[i], assigned, vals)) != NULL) {
             assert_literal(lp, vals, assigned);
+            stack_item si = {lp, 0};
+            push_stack(s, &si);
             continue;
         }
         else {
@@ -189,6 +194,8 @@ int solve(formula *form)
                     // if clause is a unit clause:
                     if ((lp = is_unitclause(&form->clauses[i], assigned, vals)) != NULL) {
                         assert_literal(lp, vals, assigned);
+                        stack_item si = {lp, 0};
+                        push_stack(s, &si);
                         continue;
                     }
                     else {
@@ -238,7 +245,7 @@ void get_clauses(char *clauses[], FILE *fp)
   *
   * sign | value | sign XOR value
   */
-literal* is_unitclause(clause *c, int assigned[], int vals[])
+literal* is_unitclause(clause *c, bool assigned[], bool vals[])
 {
     int i;
     literal * lp;
@@ -261,7 +268,7 @@ literal* is_unitclause(clause *c, int assigned[], int vals[])
         return satisfied ? NULL: lp;
 }
 
-void assert_literal(literal *lp, int vals[], int assigned[])
+void assert_literal(literal *lp, bool vals[], bool assigned[])
 {
     if (lp->sign)
         vals[lp->id] = 0;
@@ -273,7 +280,7 @@ void assert_literal(literal *lp, int vals[], int assigned[])
     return;
 }
 
-bool alllits_assigned(clause *c, int assigned[])
+bool alllits_assigned(clause *c, bool assigned[])
 {
 
     // if any of the literals in the clause are not assigned,
@@ -287,7 +294,7 @@ bool alllits_assigned(clause *c, int assigned[])
     return 1;
 }
 
-bool clause_satisfied(clause *c, int vals[])
+bool clause_satisfied(clause *c, bool vals[])
 {
     bool satisfied = 0;
 
@@ -299,6 +306,18 @@ bool clause_satisfied(clause *c, int vals[])
     }
 
     return satisfied;
+}
+
+void push_stack(stack *sp, stack_item *item)
+{
+    sp->items[sp->top] = item;
+    sp->top++;
+}
+
+void pop_stack(stack *sp, stack_item *item)
+{
+    item = sp->items[sp->top];
+    sp->top++;
 }
 
 /**

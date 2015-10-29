@@ -32,15 +32,27 @@ typedef struct {
        clause clauses[];
 } formula;
 
+typedef struct {
+        literal *lp;
+        bool guess;
+} stack_item;
+
+typedef struct {
+    stack_item **items;
+    unsigned short top;
+} stack;
+
 /* Core algorithm */
 int solve(formula *);
 
 /* Helper functions */
-literal* is_unitclause(clause *, int [], int[]);
-bool alllits_assigned(clause *, int[]);
-bool clause_satisfied(clause *, int[]);
-void assert_literal(literal *, int [], int []);
+literal* is_unitclause(clause *, bool [], bool[]);
+bool alllits_assigned(clause *, bool[]);
+bool clause_satisfied(clause *, bool[]);
+void assert_literal(literal *, bool [], bool []);
 void pre_process(FILE *fp, formula *);
+void push_stack(stack *, stack_item *);
+void pop_stack(stack *, stack_item *);
 long int convert_to_int(char *pch);
 
 #endif
