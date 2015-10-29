@@ -9,6 +9,7 @@
 #include <string.h>
 #include <errno.h>
 #include <assert.h>
+#include <stdbool.h>
 #include "satsolv.h"
 
 int main(int argc, char **argv)
@@ -40,7 +41,7 @@ int main(int argc, char **argv)
     pre_process(fp, &form);
 
     /* invoke the solver and print out the result */
-    int res = solve(fp);
+    int res = solve(&form);
     switch(res) {
         case SATISFIABLE:
             printf(SAT_STRING);
@@ -149,42 +150,56 @@ void pre_process(FILE *fp, formula *form) {
   * UNSATISFIABLE. It the formulas cannot be verified SATISFIABLE or UNSATISFIABLE, then this function
   * will return UNKNOWN.
   *
-  * @arg fp - A pointer to a file object that contains the propositional logic formulas.
+  * @arg form - A pointer to a formula structure that contains the propositional logic clauses.
   */
-int solve(FILE *fp)
+int solve(formula *form)
 {
-
-    // get the nvar and nclauses values from the input file
-    int nvar, nclauses;
-    get_fileparams(fp, &nvar, &nclauses);
-
     if (DEBUG) {
-        printf("nvar (%d)\n", nvar);
-        printf("nclauses (%d)\n", nclauses);
+        printf("nvar (%d)\n", form->nvars);
+        printf("nclauses (%d)\n", form->nclauses);
     }
 
-    // initialize the stack structure
-    //struct boolvar varstack[nvar];
-    int top = 0;
+    int assigned[form->nvars];
+    int vals[form->nvars];
 
-    // create a structure to keep track of assigned variables
-    int *assigned = calloc(nvar, sizeof(int));
-    if (DEBUG) print_assigned(assigned, nvar);
-
-    // get the clauses from the input file
-    char *clauses[nclauses];
+    // foreach clause in formula
     int i;
-    for (i = 0; i < nclauses; i++)
-        clauses[i] = malloc(MAXLINE * sizeof(char));
-    get_clauses(clauses, fp);
-    if (DEBUG) print_clauses(clauses, nclauses);
+    for (i = 0; i < form->nclauses; i++) {
 
-
+        // if clause is a unit clause
+        literal *lp;
+        if ((lp = is_unitclause(&form->clauses[i], assigned, vals)) != NULL) {
+            assert_literal(lp, vals, assigned);
+            continue;
+        }
+        else {
+            // if all literals are assigned
+            if (alllits_assigned(&form->clauses[i], assigned)) {
+                // if clause satisfied
+                if (clause_satisfied(&form->clauses[i], vals))
+                    continue;
+                else {
+                    // "backtrack"
+                }
+            }
+            else {
+                // foreach literal
+                int j;
+                for(j = 0; j < form->clauses[i].length; j++) {
+                    // if clause is a unit clause:
+                    if ((lp = is_unitclause(&form->clauses[i], assigned, vals)) != NULL) {
+                        assert_literal(lp, vals, assigned);
+                        continue;
+                    }
+                    else {
+                        // guess on literal if literal not assigned
+                    }
+                }
+            }
+        }
+    }
 
     // cleanup
-    free(assigned);
-    for (i = 0; i < nclauses; i++)
-        free(clauses[i]);
 
     // otherwise the result is unknown
     return UNKNOWN;
@@ -207,9 +222,6 @@ int solve(FILE *fp)
   */
 void get_clauses(char *clauses[], FILE *fp)
 {
-    // refresh the file stream buffer to point to the beginning of the file
-    rewind(fp);
-
     int i = 0;
     char line[MAXLINE];
     while (fgets(line, MAXLINE, fp) != NULL) {
@@ -221,96 +233,72 @@ void get_clauses(char *clauses[], FILE *fp)
 }
 
 /**
-  * Prints the clauses contained in the array of clauses.
+  * Returns a pointer to the remaining unsigned literal if the supplied clause
+  * is a unit clause. Null otherwise.
+  *
+  * sign | value | sign XOR value
   */
-void print_clauses(char *clauses[], int nclauses)
+literal* is_unitclause(clause *c, int assigned[], int vals[])
 {
-   printf("Clauses: \n");
+    int i;
+    literal * lp;
+    int assigned_cnt = 0;
+    bool satisfied = 0;
+    for (i = 0; i < c->length; i++) {
+        if (assigned[c->lits[i].id]) {
+            bool sign = c->lits[i].sign;
+            bool value = vals[c->lits[i].id];
+            assigned_cnt++;
+            satisfied |= (sign ^ value);
+        }
+        else
+            lp = &c->lits[i];
+    }
 
-   int i;
-   for (i = 0; i < nclauses; i++)
-       printf("%s\n", clauses[i]);
+    if (assigned_cnt != (c->length - 1))
+        return NULL;
+    else
+        return satisfied ? NULL: lp;
 }
 
-/**
-  * Prints the assigned variables in the assigned array.
-  */
-void print_assigned(int assigned[], int nvar)
+void assert_literal(literal *lp, int vals[], int assigned[])
 {
-    printf("Assigned variables:\n");
+    if (lp->sign)
+        vals[lp->id] = 0;
+    else
+        vals[lp->id] = 1;
+
+    assigned[lp->id] = 1;
+
+    return;
+}
+
+bool alllits_assigned(clause *c, int assigned[])
+{
+
+    // if any of the literals in the clause are not assigned,
+    // return false. otherwise return true
+    int i;
+    for (i = 0; i < c->length; i++) {
+        if (!assigned[c->lits[i].id])
+            return 0;
+    }
+
+    return 1;
+}
+
+bool clause_satisfied(clause *c, int vals[])
+{
+    bool satisfied = 0;
 
     int i;
-    for (i = 0; i < nvar; i++)
-        printf("%d ", assigned[i]);
-    printf("\n");
-}
-
-/**
-  * Gets the parameters from the input file indicating the number
-  * of variables and clauses.
-  *
-  * @arg fp - A pointer to a file object that contains the propositional logic formulas.
-  * @arg nvar - A pointer to an integer where nvar is stored.
-  * @arg nclauses - A pointer to an integer where nclauses is stored.
-  */
-void get_fileparams(FILE *fp, int *nvar, int *nclauses)
-{
-    // refresh the file stream buffer to point to the beginning of the file
-    rewind(fp);
-
-    char line[MAXLINE];
-    while (fgets(line, MAXLINE, fp) != NULL) {
-        if (line[0] == 'p') {
-            char *pch;
-            pch = strtok (line," ");
-
-            int c = 0;
-            while (pch != NULL)
-            {
-                if (c == 2)
-                    *nvar = atoi(pch);
-
-                if (c == 3)
-                    *nclauses = atoi(pch);
-
-                pch = strtok (NULL, " ");
-                c++;
-            }
-            return;
-        }
-    }
-}
-
-/**
-  * Returns True if supplied clause is a unit clause. False otherwise.
-  *
-  * A clause is said to be a unit clause if all but 1 variable is assigned
-  * in the clause and the clause is unsatisfied.
-  */
-int is_unitclause(char *clause, int *assigned)
-{
-
-    /* iterate over each of the variables in the clause incrementing 'nvars' each time.
-       if the variable being processed is assigned, then increment 'cnt' by 1. */
-    int var, cnt, sat;
-    int nvars = 0;
-    char *pch;
-    pch = strtok(clause, " ");
-    while (pch != NULL) {
-        var = atoi(pch);
-        cnt += assigned[var];
-        sat |= assigned[var];
-        nvars++;
-        pch = strtok(NULL, " ");
+    for (i = 0; i < c->length; i++) {
+        bool sign = c->lits[i].sign;
+        bool value = vals[c->lits[i].id];
+        satisfied |= (sign ^ value);
     }
 
-    // if there was *not* exactly one variable unassigned, then the clause is not a unit clause
-    if (cnt != nvars -1)
-        return 0;
-    else {
-        // otherwise return 0 if the clause is already satisfied, or 1 if it is not satisfied
-        return sat ? 0 : 1;
-    }
+    return satisfied;
 }
 
 /**

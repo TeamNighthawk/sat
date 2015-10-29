@@ -23,25 +23,23 @@ typedef struct {
 
 typedef struct {
        unsigned short length;
-       literal *lits;
+       literal lits[];
 } clause;
 
 typedef struct {
        unsigned short nvars;
        unsigned short nclauses;
-       clause *clauses;
+       clause clauses[];
 } formula;
 
 /* Core algorithm */
-int solve(FILE *fp);
+int solve(formula *);
 
 /* Helper functions */
-void get_clauses(char *clauses[], FILE *fp);
-void print_clauses(char *clauses[], int nclauses);
-void print_assigned(int assigned[], int nvar);
-void get_fileparams(FILE *fp, int *, int *);
-int is_unitclause(char *, int assigned[]);
-
+literal* is_unitclause(clause *, int [], int[]);
+bool alllits_assigned(clause *, int[]);
+bool clause_satisfied(clause *, int[]);
+void assert_literal(literal *, int [], int []);
 void pre_process(FILE *fp, formula *);
 long int convert_to_int(char *pch);
 
