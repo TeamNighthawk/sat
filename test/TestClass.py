@@ -31,8 +31,8 @@ class Tester(object):
     def worker(self, is_oracle):
         """
         This is the thread worker function.
-        args - contains the arguments needed for running oracle/satsolv
-             - of the format ['Program', 'Filename', 'arguments']
+        The threads cannot accept objects as arguments, so class variables
+        are used to communicate.
         """
         args = self.sat_args
         if is_oracle:
@@ -43,9 +43,7 @@ class Tester(object):
         return out
     def execute(self, filename):
         """
-        Executes the threads and compares results.  Failed comparisons
-        are added to the list of failed filenames.
-        filename - path to the file being tested.
+        Executes the threads and compares results.
         returns nothing
         """
         """
