@@ -5,6 +5,9 @@ Author: Dustin Jay Tuckett u0204088
 from multiprocessing.pool import ThreadPool
 from FileCreator import SatFileInstance
 from subprocess import Popen, PIPE
+import random
+import os
+import datetime
 
 class Tester(object):
     """
@@ -16,12 +19,13 @@ class Tester(object):
         """
         Initialize the tester instance
         """
-        self.failed = []
+        self.output = open("test_results.txt", 'a')
+        self.output.write("Test Run for : %s \n" % datetime.datetime.utcnow())
         self.sat = "SATISFIABLE"
         self.unsat = "UNSATISFIABLE"
+        self.err = "ERROR"
         #setup class variables required for multi-threading
         self.pool = ThreadPool(processes=2) #only two processes are ever running at a time
-        self.filename = ''
         self.oracle_args = []
         self.sat_args = []
     def worker(self, is_oracle):
@@ -66,14 +70,41 @@ class Tester(object):
         elif self.sat in oracle_result:
             oracle_result = self.sat
         if sat_result != oracle_result:
-            self.failed.append(filename)
-        print oracle_result
-        print sat_result
+            self.write_error(filename, oracle_result, sat_result)
+    def test_io(self):
+        """
+        Tests a variety of different files with bad inputs.  SatSolver
+        should always report an error for these files.
+        """
+        #testing run with no argument
+        self.sat_args = ['../bin/satsolv', '']
+        result = self.worker(False)
+        if self.err not in result:
+            self.write_error('', self.err, result)
+        for files in os.listdir("test_files/"):
+            if files.endswith(".tf"):
+                self.sat_args = ['../bin/satsolv', files]
+                result = self.worker(False)
+                if 'ERROR' not in result:
+                    self.write_error(files, 'ERROR', result)
+
+    def write_error(self, filename, expected, received):
+        """
+        Writes the applicable error to the output file.
+        """
+        self.output.write(
+            "\n Test failed for file: %s.  Expected output:  %s, Received output: %s \n"
+            % (filename, expected, received) )
+
     def test_simple(self):
         """
         Runs the simple tests, on small files.  Runs several versions of each type of file
         to increase chances of receiving SATISFIABLE and UNSATISFIABLE
         """
-        solver = SatFileInstance(5, 3)
-        filename = solver.create_file()
-        self.execute(filename)
+        for i in range (0, 20):
+            literals = random.randint(2, 20)
+            clauses = random.randint(2, 60)
+            solver = SatFileInstance(literals, clauses)
+            for j in range (0,10):
+                filename = solver.create_file()
+                self.execute(filename)
