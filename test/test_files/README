@@ -1,1 +1,3 @@
-This is where all of the test_files will be generated
+This is where all of the test_files will be generated.  The randomly generated files will have a .cnf extension.
+The extension .ftf indicates a pre-generated test file that should cause an Error.
+The extension .ptf indicates a pre-generated test file that should pass.
