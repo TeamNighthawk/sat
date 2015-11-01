@@ -35,13 +35,11 @@ int main(int argc, char **argv)
         return 0;
     }
 
-    formula form;
-
     /* validate the input file */
-    pre_process(fp, &form);
+    formula *form = pre_process(fp);
 
     /* invoke the solver and print out the result */
-    int res = solve(&form);
+    int res = solve(form);
     switch(res) {
         case SATISFIABLE:
             printf(SAT_STRING);
@@ -61,11 +59,13 @@ int main(int argc, char **argv)
     return 0;
 }
 
-void pre_process(FILE *fp, formula *form) {
-
-    long int nvar, nclauses;
+formula* pre_process(FILE *fp) {
     char line[MAXLINE];
+    int nvars = 0;
+    int nclauses = 0;
     int clauseCount = 0;
+    int containsPLine = 0;
+    formula *form;
     while (fgets(line, MAXLINE, fp) != NULL) {
         /* Skip the comments */
         if(line[0] == 'c') {
@@ -73,11 +73,14 @@ void pre_process(FILE *fp, formula *form) {
         } else if (line[0] == 'p') { /* Get the nbvar and nbclause args */
             char * pch;
             pch = strtok (line," ");
-
             int c = 0;
             while (pch != NULL) {
+                if(c == 1 && strcmp(pch, "cnf") != 0){
+                    printf(ERROR_STRING);
+                    exit(0);
+                }
                 if (c == 2)
-                    nvar = convert_to_int(pch);
+                    nvars = convert_to_int(pch);
 
                 if (c == 3)
                     nclauses = convert_to_int(pch);
@@ -85,25 +88,43 @@ void pre_process(FILE *fp, formula *form) {
                 pch = strtok (NULL, " ");
                 c++;
             }
+            if(nvars > MAXCLAUSES || nclauses > MAXCLAUSES || c != 4){
+                printf(ERROR_STRING);
+                exit(0);
+            }
+            containsPLine = 1;
+            form = malloc(sizeof(formula) + nclauses * sizeof(clause*));
+            form->nvars = nvars;
+            form->nclauses = nclauses;
         } else { /* assume an argument clause and check its correctness */
             char *var;
             long int varList[MAXLINE] = {0}; /* Initialize all values to 0 */
             int innerCount = 0;
             long int numVal;
-	    clauseCount++;
+            int litCount = 0;
+
+            if(!containsPLine){
+                printf(ERROR_STRING);
+                exit(0);
+            }
 
             /* convert line into array */
             var = strtok(line, " ");
+            varList[0] = convert_to_int(var);
+            litCount++;
+            var = strtok(NULL, " ");
             while(var != NULL) {
                 numVal = convert_to_int(var);
 
+                litCount++;
                 /* Account for end of line */
                 if(numVal == 0) {
                     break;
                 }
 
+
                 /* If the number in the clause is not between -nbvar and nbvar then file is ill formatted */
-                if(numVal < -nvar || numVal > nvar) {
+                if(numVal < form->nvars * -1 || numVal > form->nvars) {
                     printf(ERROR_STRING);
                     exit(0);
                 }
@@ -120,22 +141,50 @@ void pre_process(FILE *fp, formula *form) {
                 }
 
                 /* Otherwise we passed all error checking for this value so add it to our list */
-                varList[innerCount] = numVal;
+                varList[innerCount-1] = numVal;
 
                 // get the next token in the clause
                 var = strtok(NULL, " ");
             }
 
+            /*create the clause, add the literals, and then add it to the formula struct*/
+            innerCount = 0;
+            clause *c = malloc(sizeof(clause) + litCount * sizeof(literal*));
+            c->length = litCount;
+
+            while(varList[innerCount] != 0){
+                literal *l = malloc(sizeof(literal));
+                if(varList[innerCount] < 0){
+                    l->id = varList[innerCount] * -1;
+                    l->sign = true;
+                } else{
+                    l->id = varList[innerCount];
+                    l->sign = false;
+                }
+
+                c->lits[innerCount] = l;
+                innerCount++;
+            }
+
+            /*Make the final lit in the clause have an id of zero.  This way the solver knows when 
+            end of clause has been reached*/
+            literal *stopLit;
+            stopLit->id = 0;
+            stopLit->sign = false;
+            c->lits[innerCount] = stopLit;
+
+            form->clauses[clauseCount] = c;
+            clauseCount++;
         }
-
-
     }
 
     /* If we there was *not* exactly the right amount of clauses, then the file is ill formatted */
-    if(clauseCount != nclauses) {
+    if(clauseCount != form->nclauses) {
       printf(ERROR_STRING);
       exit(0);
     }
+
+    return form;
 
 }
 
@@ -171,7 +220,7 @@ int solve(formula *form)
 
         // if clause is a unit clause
         literal *lp;
-        if ((lp = is_unitclause(&form->clauses[i], assigned, vals)) != NULL) {
+        if ((lp = is_unitclause(form->clauses[i], assigned, vals)) != NULL) {
             assert_literal(lp, vals, assigned);
             stack_item si = {lp, 0};
             push_stack(s, &si);
@@ -179,9 +228,9 @@ int solve(formula *form)
         }
         else {
             // if all literals are assigned
-            if (alllits_assigned(&form->clauses[i], assigned)) {
+            if (alllits_assigned(form->clauses[i], assigned)) {
                 // if clause satisfied
-                if (clause_satisfied(&form->clauses[i], vals))
+                if (clause_satisfied(form->clauses[i], vals))
                     continue;
                 else {
                     // "backtrack"
@@ -190,9 +239,9 @@ int solve(formula *form)
             else {
                 // foreach literal
                 int j;
-                for(j = 0; j < form->clauses[i].length; j++) {
+                for(j = 0; j < form->clauses[i]->length; j++) {
                     // if clause is a unit clause:
-                    if ((lp = is_unitclause(&form->clauses[i], assigned, vals)) != NULL) {
+                    if ((lp = is_unitclause(form->clauses[i], assigned, vals)) != NULL) {
                         assert_literal(lp, vals, assigned);
                         stack_item si = {lp, 0};
                         push_stack(s, &si);
@@ -252,14 +301,14 @@ literal* is_unitclause(clause *c, bool assigned[], bool vals[])
     int assigned_cnt = 0;
     bool satisfied = 0;
     for (i = 0; i < c->length; i++) {
-        if (assigned[c->lits[i].id]) {
-            bool sign = c->lits[i].sign;
-            bool value = vals[c->lits[i].id];
+        if (assigned[c->lits[i]->id]) {
+            bool sign = c->lits[i]->sign;
+            bool value = vals[c->lits[i]->id];
             assigned_cnt++;
             satisfied |= (sign ^ value);
         }
         else
-            lp = &c->lits[i];
+            lp = c->lits[i];
     }
 
     if (assigned_cnt != (c->length - 1))
@@ -287,7 +336,7 @@ bool alllits_assigned(clause *c, bool assigned[])
     // return false. otherwise return true
     int i;
     for (i = 0; i < c->length; i++) {
-        if (!assigned[c->lits[i].id])
+        if (!assigned[c->lits[i]->id])
             return 0;
     }
 
@@ -300,8 +349,8 @@ bool clause_satisfied(clause *c, bool vals[])
 
     int i;
     for (i = 0; i < c->length; i++) {
-        bool sign = c->lits[i].sign;
-        bool value = vals[c->lits[i].id];
+        bool sign = c->lits[i]->sign;
+        bool value = vals[c->lits[i]->id];
         satisfied |= (sign ^ value);
     }
 
