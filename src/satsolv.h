@@ -1,6 +1,7 @@
 #ifndef SATSOLV_H
 #define SATSOLV_H
 
+#include <stdio.h>
 #include <stdbool.h>
 
 /* Definitions */
