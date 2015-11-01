@@ -104,3 +104,14 @@ class Tester(object):
             for j in range (0,10):
                 filename = solver.create_file()
                 self.execute(filename)
+    def stress_test(self):
+        """
+        Runs a Large file.  Note:  The specifications of the assignment
+        indicate that the max for literals or clauses is 65536.  If a file of
+        this size were actually generated it would be in excess of 30 GB.  I
+        will not generate a file of that size here.  I have settled on an
+        size of approximately 300 MB.
+        """
+        solver = SatFileInstance(10000, 10000)
+        filename = solver.create_file()
+        self.execute(filename)

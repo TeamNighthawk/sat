@@ -1,0 +1,8 @@
+c Comments
+p cnf 5 3
+1 -5 4 0
+c on
+-1 5 3 4 0
+c multiple
+-3 -4 0
+c lines
