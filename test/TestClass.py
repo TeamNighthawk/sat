@@ -71,20 +71,18 @@ class Tester(object):
             self.write_error(filename, oracle_result, sat_result)
     def test_io(self):
         """
-        Tests a variety of different files with bad inputs.  SatSolver
-        should always report an error for these files.
+        Tests a variety of different files with good(.ptf) and
+        bad inputs (.ftf).
         """
-        #testing run with no argument
-        self.sat_args = ['../bin/satsolv', '']
-        result = self.worker(False)
-        if self.err not in result:
-            self.write_error('', self.err, result)
         for files in os.listdir("test_files/"):
-            if files.endswith(".tf"):
+            if files.endswith(".ftf"):
                 self.sat_args = ['../bin/satsolv', files]
                 result = self.worker(False)
-                if 'ERROR' not in result:
+                if self.err not in result:
                     self.write_error(files, 'ERROR', result)
+            elif files.endswith(".ptf"):
+                if self.err in result or 'UNKNOWN' in result:
+                    self.write_error(files, 'SATISFIABLE | UNSATISFIABLE', result)
 
     def write_error(self, filename, expected, received):
         """
