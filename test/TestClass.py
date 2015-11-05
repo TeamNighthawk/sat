@@ -98,8 +98,8 @@ class Tester(object):
         to increase chances of receiving SATISFIABLE and UNSATISFIABLE
         """
         for i in range (0, 20):
-            literals = random.randint(2, 20)
-            clauses = random.randint(2, 60)
+            literals = random.randint(1, 20)
+            clauses = random.randint(1, 60)
             solver = SatFileInstance(literals, clauses)
             for j in range (0,10):
                 filename = solver.create_file()

@@ -49,8 +49,8 @@ class SatFileInstance(object):
         A clause is a set of literals and no repeats are allowed.  Each literal
         is randomly negated.
         """
-        #create list of literals to be used in this clause
-        literals = random.sample(self.literal_list, random.randint(1, self.literal_count -1))
+
+        literals = random.sample(self.literal_list, random.randint(1, self.literal_count))
 
         clause = ""
 
