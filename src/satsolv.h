@@ -15,6 +15,7 @@
 #define UNSAT_STRING "UNSATISFIABLE\n"
 #define UNKNOWN_STRING "UNKNOWN\n"
 #define ERROR_STRING "ERROR\n" // define the error string
+#define INPUT_ERROR "INPUT_ERROR\n" //for pre processing debugging purposes
 
 typedef struct {
         unsigned short id;

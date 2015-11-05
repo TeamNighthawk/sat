@@ -35,6 +35,15 @@ int main(int argc, char **argv)
         return 0;
     }
 
+    /*if we have an empty file just return error */
+    fseek(fp, 0, SEEK_END);
+    if(ftell(fp) == 0){
+        printf(ERROR_STRING);
+        exit(0);
+    } else{
+        rewind(fp);
+    }
+
     /* validate the input file */
     formula *form = pre_process(fp);
 
@@ -64,13 +73,18 @@ formula* pre_process(FILE *fp) {
     int nvars = 0;
     int nclauses = 0;
     int clauseCount = 0;
-    int containsPLine = 0;
+    bool containsPLine = false;
     formula *form;
     while (fgets(line, MAXLINE, fp) != NULL) {
         /* Skip the comments */
         if(line[0] == 'c') {
             continue;
         } else if (line[0] == 'p') { /* Get the nbvar and nbclause args */
+            /*If we already processed a p line then there are two which is ill format*/
+            if(containsPLine){
+                printf(ERROR_STRING);
+                exit(0);
+            }
             char * pch;
             pch = strtok (line," ");
             int c = 0;
@@ -92,7 +106,7 @@ formula* pre_process(FILE *fp) {
                 printf(ERROR_STRING);
                 exit(0);
             }
-            containsPLine = 1;
+            containsPLine = true;
             form = malloc(sizeof(formula) + nclauses * sizeof(clause*));
             form->nvars = nvars;
             form->nclauses = nclauses;
@@ -102,6 +116,7 @@ formula* pre_process(FILE *fp) {
             int innerCount = 0;
             long int numVal;
             int litCount = 0;
+            bool hasZero = false;
 
             if(!containsPLine){
                 printf(ERROR_STRING);
@@ -115,11 +130,15 @@ formula* pre_process(FILE *fp) {
             var = strtok(NULL, " ");
             while(var != NULL) {
                 numVal = convert_to_int(var);
-
                 litCount++;
+                /*If there are inputs after zero it is ill formatted*/
+                if(hasZero = true){
+                    printf(ERROR_STRING);
+                    exit(0);
+                }
                 /* Account for end of line */
                 if(numVal == 0) {
-                    break;
+                    hasZero = true;
                 }
 
 
@@ -145,6 +164,11 @@ formula* pre_process(FILE *fp) {
 
                 // get the next token in the clause
                 var = strtok(NULL, " ");
+            }
+
+            if(!hasZero){
+                printf(ERROR_STRING);
+                exit(0);
             }
 
             /*create the clause, add the literals, and then add it to the formula struct*/
