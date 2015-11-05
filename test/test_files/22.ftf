@@ -1,0 +1,8 @@
+c
+c Extra new lines in between clauses
+c
+p cnf 1 2
+1 0
+
+
+-1 0
