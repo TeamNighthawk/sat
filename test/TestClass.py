@@ -89,9 +89,10 @@ class Tester(object):
         """
         Writes the applicable error to the output file.
         """
-        self.output.write(
-            "\n Test failed for file: %s  :  Expected output:  %s, Received output: %s \n"
-            % (filename, expected, received) )
+        error = ("\n Test failed for file: %s  :  Expected output:  %s, Received output: %s \n"
+            % (filename, expected, received))
+        self.output.write( error )
+        print error
 
     def test_simple(self):
         """
