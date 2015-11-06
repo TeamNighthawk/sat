@@ -126,7 +126,7 @@ formula* pre_process(FILE *fp) {
                 c++;
             }
 
-            if(nvars > MAXCLAUSES || nclauses > MAXCLAUSES || c != 4) {
+            if(nvars > MAXLITS || nclauses > MAXCLAUSES || c != 4) {
                 printf(ERROR_STRING);
                 exit(0);
             }
@@ -252,7 +252,10 @@ int solve(formula *form)
     // algorithm
     bool assigned[form->nvars];
     bool vals[form->nvars];
-    stack s[form->nvars];
+    stack s;
+    stack_item* sitems[form->nvars];
+    s.items = sitems;
+    s.top = 0;
 
     // foreach clause in formula
     int i;
@@ -263,7 +266,7 @@ int solve(formula *form)
         if ((lp = is_unitclause(form->clauses[i], assigned, vals)) != NULL) {
             assert_literal(lp, vals, assigned);
             stack_item si = {lp, 0};
-            push_stack(s, &si);
+            push_stack(&s, &si);
             continue;
         }
         else {
@@ -284,21 +287,26 @@ int solve(formula *form)
                     if ((lp = is_unitclause(form->clauses[i], assigned, vals)) != NULL) {
                         assert_literal(lp, vals, assigned);
                         stack_item si = {lp, 0};
-                        push_stack(s, &si);
+                        push_stack(&s, &si);
                         continue;
                     }
                     else {
                         // guess on literal if literal not assigned
+                        literal *lp = form->clauses[i]->lits[j];
+                        int lit_id = lp->id;
+                        if (!assigned[lit_id]) {
+                            assert_literal(lp, vals, assigned);
+                            stack_item si = {lp, 1};
+                            push_stack(&s, &si);
+                        }
                     }
                 }
             }
         }
     }
 
-    // cleanup
-
-    // otherwise the result is unknown
-    return UNKNOWN;
+    // if we get this far the assumption is that we could satisfy the formula
+    return SATISFIABLE;
 }
 
 /** HELPER FUNCTIONS **/
