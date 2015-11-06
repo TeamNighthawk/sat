@@ -52,7 +52,7 @@ literal* is_unitclause(clause *, bool [], bool[]);
 bool alllits_assigned(clause *, bool[]);
 bool clause_satisfied(clause *, bool[]);
 void assert_literal(literal *, bool [], bool []);
-void pre_process(FILE *fp, formula *);
+formula* pre_process(FILE *fp);
 void push_stack(stack *, stack_item *);
 void pop_stack(stack *, stack_item *);
 long int convert_to_int(char *pch);

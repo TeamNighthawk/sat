@@ -47,13 +47,9 @@ int main(int argc, char **argv)
     /* validate the input file */
     formula *form = pre_process(fp);
 
-    //if (DEBUG)
-    //    print_structure(form);
-
-    int i, j;
-    for(i = 0; i < form->nclauses; i++)
-        for(j = 0; j < form->clauses[i]->length; j++)
-            printf("%d \n", form->clauses[i]->lits[j]->id);
+    // prints the resulting structure created by the pre-processing step
+    if (DEBUG)
+        print_structure(form);
 
     /* invoke the solver and print out the result */
     int res = solve(form);
@@ -78,12 +74,17 @@ int main(int argc, char **argv)
 
 void print_structure(formula *f)
 {
+    printf("nvar (%d)\n", f->nvars);
+    printf("nclauses (%d)\n\n", f->nclauses);
+
     int i, j;
     for(i = 0; i < f->nclauses; i++) {
-        //printf("%d\n", f->clauses[i]->length);
-         for(j = 0; j < f->clauses[i]->length - 1; j++) {
-             printf("%d ", f->clauses[i]->lits[j]->id);
-         }
+        literal *lp;
+        for(j = 0; j < f->clauses[i]->length; j++) {
+            lp = f->clauses[i]->lits[j];
+            printf("%d ", lp->sign ? -1*(lp->id): lp->id);
+        }
+        printf("\n");
     }
 }
 
@@ -247,11 +248,6 @@ formula* pre_process(FILE *fp) {
   */
 int solve(formula *form)
 {
-    if (DEBUG) {
-        printf("nvar (%d)\n", form->nvars);
-        printf("nclauses (%d)\n", form->nclauses);
-    }
-
     // create the structures to store the state of the
     // algorithm
     bool assigned[form->nvars];
