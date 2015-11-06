@@ -9,8 +9,9 @@
 #define UNKNOWN 2
 #define ERROR 3
 #define DEBUG 1     // enables debugging output
-#define MAXLINE 256 // maximum length of a line
+#define MAXLINE 65537 // maximum length of a line
 #define MAXCLAUSES 65536 // maximum number of clauses in a formula
+#define MAXLITS 65536    // maximum number of literals in a formula
 #define SAT_STRING "SATISFIABLE\n"
 #define UNSAT_STRING "UNSATISFIABLE\n"
 #define UNKNOWN_STRING "UNKNOWN\n"
@@ -51,9 +52,10 @@ literal* is_unitclause(clause *, bool [], bool[]);
 bool alllits_assigned(clause *, bool[]);
 bool clause_satisfied(clause *, bool[]);
 void assert_literal(literal *, bool [], bool []);
-formula* pre_process(FILE *fp);
+void pre_process(FILE *fp, formula *);
 void push_stack(stack *, stack_item *);
 void pop_stack(stack *, stack_item *);
 long int convert_to_int(char *pch);
+void print_structure();
 
 #endif
