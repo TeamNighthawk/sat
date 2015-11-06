@@ -45,10 +45,14 @@ int main(int argc, char **argv)
     }
 
     /* validate the input file */
-    formula *form = pre_process(fp);
+    formula form;
+    pre_process(fp, &form);
+
+    if (DEBUG)
+        print_structure(&form);
 
     /* invoke the solver and print out the result */
-    int res = solve(form);
+    int res = solve(&form);
     switch(res) {
         case SATISFIABLE:
             printf(SAT_STRING);
@@ -68,28 +72,41 @@ int main(int argc, char **argv)
     return 0;
 }
 
-formula* pre_process(FILE *fp) {
+void print_structure(formula *f)
+{
+    int i, j;
+    for(i = 0; i < f->nclauses; i++) {
+        printf("%d\n", f->clauses[i]->length);
+        // for(j = 0; j < f->clauses[i]->length - 1; j++) {
+        //     printf("%d ", f->clauses[i]->lits[j]->id);
+        // }
+    }
+}
+
+void pre_process(FILE *fp, formula *form) {
     char line[MAXLINE];
     int nvars = 0;
     int nclauses = 0;
     int clauseCount = 0;
     bool containsPLine = false;
-    formula *form;
-    while (fgets(line, MAXLINE, fp) != NULL) {
-        /* Skip the comments */
+    while (fgets(line, MAXLINE, fp) != NULL)
+    {
+        /* Skip comments */
         if(line[0] == 'c') {
             continue;
         } else if (line[0] == 'p') { /* Get the nbvar and nbclause args */
-            /*If we already processed a p line then there are two which is ill format*/
-            if(containsPLine){
+            /* If we already processed a p line then there are two which is ill format */
+            if(containsPLine) {
                 printf(ERROR_STRING);
                 exit(0);
             }
-            char * pch;
-            pch = strtok (line," ");
+
+            char *pch;
+            pch = strtok(line," ");
             int c = 0;
-            while (pch != NULL) {
-                if(c == 1 && strcmp(pch, "cnf") != 0){
+            while (pch != NULL)
+            {
+                if (c == 1 && strcmp(pch, "cnf") != 0) {
                     printf(ERROR_STRING);
                     exit(0);
                 }
@@ -99,29 +116,34 @@ formula* pre_process(FILE *fp) {
                 if (c == 3)
                     nclauses = convert_to_int(pch);
 
-                pch = strtok (NULL, " ");
+                pch = strtok(NULL, " ");
                 c++;
             }
-            if(nvars > MAXCLAUSES || nclauses > MAXCLAUSES || c != 4){
+
+            if(nvars > MAXLITS || nclauses > MAXCLAUSES || c != 4) {
                 printf(ERROR_STRING);
                 exit(0);
             }
-            containsPLine = true;
+
             form = malloc(sizeof(formula) + nclauses * sizeof(clause*));
             form->nvars = nvars;
             form->nclauses = nclauses;
+            containsPLine = true;
         } else { /* assume an argument clause and check its correctness */
+
+            /* if we haven't seen the p line, then the format of the file was
+               incorrect */
+            if (!containsPLine) {
+                printf(ERROR_STRING);
+                exit(0);
+            }
+
             char *var;
             long int varList[MAXLINE] = {0}; /* Initialize all values to 0 */
             int innerCount = 0;
             long int numVal;
             int litCount = 0;
             bool hasZero = false;
-
-            if(!containsPLine){
-                printf(ERROR_STRING);
-                exit(0);
-            }
 
             /* convert line into array */
             var = strtok(line, " ");
@@ -132,7 +154,7 @@ formula* pre_process(FILE *fp) {
                 numVal = convert_to_int(var);
                 litCount++;
                 /*If there are inputs after zero it is ill formatted*/
-                if(hasZero = true){
+                if(hasZero) {
                     printf(ERROR_STRING);
                     exit(0);
                 }
@@ -141,7 +163,6 @@ formula* pre_process(FILE *fp) {
                     hasZero = true;
                 }
 
-
                 /* If the number in the clause is not between -nbvar and nbvar then file is ill formatted */
                 if(numVal < form->nvars * -1 || numVal > form->nvars) {
                     printf(ERROR_STRING);
@@ -149,7 +170,7 @@ formula* pre_process(FILE *fp) {
                 }
 
                 innerCount = 0;
-                while(varList[innerCount++] != 0) {
+                while(varList[innerCount] != 0) {
                     /* Cant have duplicates and can't have opposite literals i and -i simultaneously */
                     int dup = numVal == varList[innerCount];
                     int opposite_lit = (numVal*-1) == varList[innerCount];
@@ -157,6 +178,7 @@ formula* pre_process(FILE *fp) {
                         printf(ERROR_STRING);
                         exit(0);
                     }
+                    innerCount++;
                 }
 
                 /* Otherwise we passed all error checking for this value so add it to our list */
@@ -172,16 +194,17 @@ formula* pre_process(FILE *fp) {
             }
 
             /*create the clause, add the literals, and then add it to the formula struct*/
-            innerCount = 0;
-            clause *c = malloc(sizeof(clause) + litCount * sizeof(literal*));
-            c->length = litCount;
+            clause *c = malloc(sizeof(clause) + (litCount - 1) * sizeof(literal*));
+            c->length = litCount - 1;
 
-            while(varList[innerCount] != 0){
+            innerCount = 0;
+            while(varList[innerCount] != 0)
+            {
                 literal *l = malloc(sizeof(literal));
                 if(varList[innerCount] < 0){
                     l->id = varList[innerCount] * -1;
                     l->sign = true;
-                } else{
+                } else {
                     l->id = varList[innerCount];
                     l->sign = false;
                 }
@@ -190,12 +213,12 @@ formula* pre_process(FILE *fp) {
                 innerCount++;
             }
 
-            /*Make the final lit in the clause have an id of zero.  This way the solver knows when 
-            end of clause has been reached*/
-            literal *stopLit;
-            stopLit->id = 0;
-            stopLit->sign = false;
-            c->lits[innerCount] = stopLit;
+            /* Make the final lit in the clause have an id of zero.  This way the solver knows when
+            end of clause has been reached */
+            // literal *stopLit = malloc(sizeof(literal));
+            // stopLit->id = 0;
+            // stopLit->sign = false;
+            // c->lits[innerCount] = stopLit;
 
             form->clauses[clauseCount] = c;
             clauseCount++;
@@ -207,9 +230,6 @@ formula* pre_process(FILE *fp) {
       printf(ERROR_STRING);
       exit(0);
     }
-
-    return form;
-
 }
 
 /**
@@ -324,6 +344,11 @@ literal* is_unitclause(clause *c, bool assigned[], bool vals[])
     literal * lp;
     int assigned_cnt = 0;
     bool satisfied = 0;
+
+    /* For each literal in the clause, check if it is assigned. If the literal
+       is already assigned, then gets its appropriate value and add it to the
+       satisfied variable. Otherwise the literal remains a candidate for
+       assignment. */
     for (i = 0; i < c->length; i++) {
         if (assigned[c->lits[i]->id]) {
             bool sign = c->lits[i]->sign;
