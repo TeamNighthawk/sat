@@ -3,6 +3,11 @@ satsolv
 satsolv is a Boolean Satisfiability (SAT) solver that parses input files given
 in the standard DIMACS format.
 
+Dependencies
+------------
+* [MiniSat](https://github.com/niklasso/minisat.git) - For differential testing.
+    * To install MiniSat, extract if from the ["extras"](extras/) directory, and follow the README.
+
 Running
 -------
 To run satsolv simply compile with make and then invoke the satsolv executable that
