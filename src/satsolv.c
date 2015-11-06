@@ -47,6 +47,11 @@ int main(int argc, char **argv)
     /* validate the input file */
     formula *form = pre_process(fp);
 
+    int i, j;
+    for(i = 0; i < form->nclauses; i++)
+        for(j = 0; j < form->clauses[i]->length; j++)
+            printf("%d \n", form->clauses[i]->lits[j]->id);
+
     /* invoke the solver and print out the result */
     int res = solve(form);
     switch(res) {
@@ -130,15 +135,16 @@ formula* pre_process(FILE *fp) {
             var = strtok(NULL, " ");
             while(var != NULL) {
                 numVal = convert_to_int(var);
-                litCount++;
                 /*If there are inputs after zero it is ill formatted*/
-                if(hasZero = true){
+                if(hasZero == true){
                     printf(ERROR_STRING);
                     exit(0);
                 }
                 /* Account for end of line */
                 if(numVal == 0) {
                     hasZero = true;
+                } else{
+                    litCount++;
                 }
 
 
@@ -153,7 +159,7 @@ formula* pre_process(FILE *fp) {
                     /* Cant have duplicates and can't have opposite literals i and -i simultaneously */
                     int dup = numVal == varList[innerCount];
                     int opposite_lit = (numVal*-1) == varList[innerCount];
-                    if(dup || opposite_lit) {
+                    if((dup || opposite_lit) && !hasZero) {
                         printf(ERROR_STRING);
                         exit(0);
                     }
@@ -192,10 +198,10 @@ formula* pre_process(FILE *fp) {
 
             /*Make the final lit in the clause have an id of zero.  This way the solver knows when 
             end of clause has been reached*/
-            literal *stopLit;
-            stopLit->id = 0;
-            stopLit->sign = false;
-            c->lits[innerCount] = stopLit;
+            //literal *stopLit;
+            //stopLit->id = 0;
+            //stopLit->sign = false;
+            //c->lits[innerCount] = stopLit;
 
             form->clauses[clauseCount] = c;
             clauseCount++;
