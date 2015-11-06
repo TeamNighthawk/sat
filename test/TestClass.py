@@ -74,15 +74,16 @@ class Tester(object):
         Tests a variety of different files with good(.ptf) and
         bad inputs (.ftf).
         """
-        for files in os.listdir("test_files/"):
-            if files.endswith(".ftf"):
-                self.sat_args = ['../bin/satsolv', files]
+        path = "test_files/"
+        for file in os.listdir(path):
+            if file.endswith(".ftf"):
+                self.sat_args = ['../bin/satsolv', path + file]
                 result = self.worker(False)
                 if self.err not in result:
-                    self.write_error(files, 'ERROR', result)
-            elif files.endswith(".ptf"):
+                    self.write_error(file, 'ERROR', result)
+            elif file.endswith(".ptf"):
                 if self.err in result or 'UNKNOWN' in result:
-                    self.write_error(files, 'SATISFIABLE | UNSATISFIABLE', result)
+                    self.write_error(file, 'SATISFIABLE | UNSATISFIABLE', result)
 
     def write_error(self, filename, expected, received):
         """

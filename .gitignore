@@ -1,5 +1,9 @@
 # Created by https://www.gitignore.io/api/c,sublimetext,vim,emacs
 
+# Ignore test generated files
+test/test_files
+test/test_results.txt
+
 # Compiled by us
 satsolv
 
@@ -97,4 +101,3 @@ tramp
 
 # cask packages
 .cask/
-

@@ -8,7 +8,7 @@
 #define UNSATISFIABLE 1
 #define UNKNOWN 2
 #define ERROR 3
-#define DEBUG 1     // enables debugging output
+#define DEBUG 0     // enables debugging output
 #define MAXLINE 65537 // maximum length of a line
 #define MAXCLAUSES 65536 // maximum number of clauses in a formula
 #define MAXLITS 65536    // maximum number of literals in a formula
