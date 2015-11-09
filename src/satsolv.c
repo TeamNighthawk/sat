@@ -312,31 +312,6 @@ int solve(formula *form)
 /** HELPER FUNCTIONS **/
 
 /**
-  * Parses the propositional logic clauses in the input file into an array of clauses, where
-  * each entry in the array is an array of characters representing that clause.
-  *
-  * For example, the propositional logic formula:
-  *
-  * (a | b) & (b | c)
-  *
-  * is composed of two clauses "(a | b)" and "(b | c)". This function would return an array like so:
-  *
-  * [0] -> "(a | b)"
-  * [1] -> "(b | c)"
-  */
-void get_clauses(char *clauses[], FILE *fp)
-{
-    int i = 0;
-    char line[MAXLINE];
-    while (fgets(line, MAXLINE, fp) != NULL) {
-        if (line[0] == 'c' || line[0] == 'p')
-            continue;
-
-        strcpy(clauses[i++], strtok(line, "\n"));
-    }
-}
-
-/**
   * Returns a pointer to the remaining unsigned literal if the supplied clause
   * is a unit clause. Null otherwise.
   *
