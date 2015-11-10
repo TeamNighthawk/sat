@@ -36,7 +36,7 @@ class SatFileInstance(object):
         filename = "test_files/sat_%r_%r_%r.cnf" % (self.literal_count, self.clause_count, self.counter)
         current_file = open(filename, 'w')
         current_file.write("c %r \n" %(filename))
-        current_file.write("p cnf %r %r \n" %(self.literal_count, self.clause_count))
+        current_file.write("p cnf %r %r\n" %(self.literal_count, self.clause_count))
         for i in range(0, self.clause_count):
             current_file.write(self.create_clause())
         current_file.close()

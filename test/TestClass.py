@@ -21,8 +21,8 @@ class Tester(object):
         """
         self.output = open("test_results.txt", 'a')
         self.output.write("Test Run for : %s \n" % datetime.datetime.utcnow())
-        self.sat = "SATISFIABLE"
-        self.unsat = "UNSATISFIABLE"
+        self.sat = "SATISFIABLE\n"
+        self.unsat = "UNSATISFIABLE\n"
         self.err = "ERROR"
         #setup class variables required for multi-threading
         self.pool = ThreadPool(processes=2) #only two processes are ever running at a time
@@ -67,7 +67,9 @@ class Tester(object):
             oracle_result = self.unsat
         elif self.sat in oracle_result:
             oracle_result = self.sat
-        if sat_result != oracle_result:
+        if sat_result == oracle_result:
+            print "Test Passes for file:  %s" % filename
+        else:
             self.write_error(filename, oracle_result, sat_result)
     def test_io(self):
         """
