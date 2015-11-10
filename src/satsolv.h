@@ -16,18 +16,20 @@
 #define UNSAT_STRING "UNSATISFIABLE\n"
 #define UNKNOWN_STRING "UNKNOWN\n"
 #define ERROR_STRING "ERROR\n" // define the error string
-#define INPUT_ERROR "INPUT_ERROR\n" //for pre processing debugging purposes
 
+/* represents a single literal */
 typedef struct {
         unsigned short id;
         bool sign;
 } literal;
 
+/* represents a clause, which is simply a set of literals */
 typedef struct {
        unsigned short length;
        literal* lits[];
 } clause;
 
+/* represents a formula, which is just a set of clauses */
 typedef struct {
        unsigned short nvars;
        unsigned short nclauses;
