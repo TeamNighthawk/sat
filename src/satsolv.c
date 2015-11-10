@@ -31,14 +31,14 @@ int main(int argc, char **argv)
         if (DEBUG)
             fprintf(stderr, "Can't open input file '%s'!\n", argv[1]);
 
-        printf(ERROR_STRING);
+        printf(INPUT_ERROR);
         return 0;
     }
 
     /*if we have an empty file just return error */
     fseek(fp, 0, SEEK_END);
     if(ftell(fp) == 0){
-        printf(ERROR_STRING);
+        printf(INPUT_ERROR);
         exit(0);
     } else{
         rewind(fp);
@@ -103,7 +103,7 @@ formula* pre_process(FILE *fp) {
         } else if (line[0] == 'p') { /* Get the nbvar and nbclause args */
             /* If we already processed a p line then there are two which is ill format */
             if(containsPLine) {
-                printf(ERROR_STRING);
+                printf(INPUT_ERROR);
                 exit(0);
             }
 
@@ -113,7 +113,7 @@ formula* pre_process(FILE *fp) {
             while (pch != NULL)
             {
                 if (c == 1 && strcmp(pch, "cnf") != 0) {
-                    printf(ERROR_STRING);
+                    printf(INPUT_ERROR);
                     exit(0);
                 }
                 if (c == 2)
@@ -127,7 +127,7 @@ formula* pre_process(FILE *fp) {
             }
 
             if(nvars > MAXLITS || nclauses > MAXCLAUSES || c != 4) {
-                printf(ERROR_STRING);
+                printf(INPUT_ERROR);
                 exit(0);
             }
 
@@ -140,7 +140,7 @@ formula* pre_process(FILE *fp) {
             /* if we haven't seen the p line, then the format of the file was
                incorrect */
             if (!containsPLine) {
-                printf(ERROR_STRING);
+                printf(INPUT_ERROR);
                 exit(0);
             }
 
@@ -160,7 +160,7 @@ formula* pre_process(FILE *fp) {
                 numVal = convert_to_int(var);
                 /*If there are inputs after zero it is ill formatted*/
                 if(hasZero == true){
-                    printf(ERROR_STRING);
+                    printf(INPUT_ERROR);
                     exit(0);
                 }
                 /* Account for end of line */
@@ -172,30 +172,32 @@ formula* pre_process(FILE *fp) {
 
                 /* If the number in the clause is not between -nbvar and nbvar then file is ill formatted */
                 if(numVal < form->nvars * -1 || numVal > form->nvars) {
-                    printf(ERROR_STRING);
+                    printf(INPUT_ERROR);
                     exit(0);
                 }
 
                 innerCount = 0;
-                while(varList[innerCount++] != 0) {
+                while(varList[innerCount] != 0) {
                     /* Cant have duplicates and can't have opposite literals i and -i simultaneously */
                     int dup = numVal == varList[innerCount];
                     int opposite_lit = (numVal*-1) == varList[innerCount];
                     if((dup || opposite_lit) && !hasZero) {
-                        printf(ERROR_STRING);
+                        printf(INPUT_ERROR);
                         exit(0);
                     }
+
+                    innerCount++;
                 }
 
                 /* Otherwise we passed all error checking for this value so add it to our list */
-                varList[innerCount-1] = numVal;
+                varList[innerCount] = numVal;
 
                 // get the next token in the clause
                 var = strtok(NULL, " ");
             }
 
             if(!hasZero){
-                printf(ERROR_STRING);
+                printf(INPUT_ERROR);
                 exit(0);
             }
 
@@ -226,7 +228,7 @@ formula* pre_process(FILE *fp) {
 
     /* If we there was *not* exactly the right amount of clauses, then the file is ill formatted */
     if(clauseCount != form->nclauses) {
-      printf(ERROR_STRING);
+      printf(INPUT_ERROR);
       exit(0);
     }
 
@@ -404,6 +406,11 @@ void pop_stack(stack *sp, stack_item *item)
 long int convert_to_int(char * pch){
     /*NULL check on pointer*/
     assert(pch != 0);
+
+    if(strcmp(pch, "-0") == 0 || strcmp(pch, "-0\n") == 0){
+        printf(INPUT_ERROR);
+        exit(0);
+    }
     char *end = "\0";
     long int val;
     errno = 0;
@@ -411,7 +418,7 @@ long int convert_to_int(char * pch){
     /*the \n check is because the line ends in a \n and it will be stored in the end pointer as invalid but the number itself
     is not invalid*/
     if(errno || (strcmp(end, "\0") && strcmp(end, "\n"))) {
-        printf(ERROR_STRING);
+        printf(INPUT_ERROR);
         exit(0);
     }
     return val;
