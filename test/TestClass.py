@@ -78,9 +78,9 @@ class Tester(object):
         """
         path = "test_files/"
         for file in os.listdir(path):
-            if file.endswith(".ftf"):
-                self.sat_args = ['../bin/satsolv', path + file]
-                result = self.worker(False)
+            self.sat_args = ['../bin/satsolv', path + file]
+            result = self.worker(False)
+            if file.endswith(".ftf"):                
                 if self.err not in result:
                     self.write_error(file, 'ERROR', result)
             elif file.endswith(".ptf"):
