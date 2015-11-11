@@ -21,8 +21,8 @@ class Tester(object):
         """
         self.output = open("test_results.txt", 'a')
         self.output.write("Test Run for : %s \n" % datetime.datetime.utcnow())
-        self.sat = "SATISFIABLE"
-        self.unsat = "UNSATISFIABLE"
+        self.sat = "SATISFIABLE\n"
+        self.unsat = "UNSATISFIABLE\n"
         self.err = "ERROR"
         #setup class variables required for multi-threading
         self.pool = ThreadPool(processes=2) #only two processes are ever running at a time
@@ -67,32 +67,34 @@ class Tester(object):
             oracle_result = self.unsat
         elif self.sat in oracle_result:
             oracle_result = self.sat
-        if sat_result != oracle_result:
+        if sat_result == oracle_result:
+            print "Test Passes for file:  %s" % filename
+        else:
             self.write_error(filename, oracle_result, sat_result)
     def test_io(self):
         """
-        Tests a variety of different files with bad inputs.  SatSolver
-        should always report an error for these files.
+        Tests a variety of different files with good(.ptf) and
+        bad inputs (.ftf).
         """
-        #testing run with no argument
-        self.sat_args = ['../bin/satsolv', '']
-        result = self.worker(False)
-        if self.err not in result:
-            self.write_error('', self.err, result)
-        for files in os.listdir("test_files/"):
-            if files.endswith(".tf"):
-                self.sat_args = ['../bin/satsolv', files]
-                result = self.worker(False)
-                if 'ERROR' not in result:
-                    self.write_error(files, 'ERROR', result)
+        path = "test_files/"
+        for file in os.listdir(path):
+            self.sat_args = ['../bin/satsolv', path + file]
+            result = self.worker(False)
+            if file.endswith(".ftf"):                
+                if self.err not in result:
+                    self.write_error(file, 'ERROR', result)
+            elif file.endswith(".ptf"):
+                if self.err in result or 'UNKNOWN' in result:
+                    self.write_error(file, 'SATISFIABLE | UNSATISFIABLE', result)
 
     def write_error(self, filename, expected, received):
         """
         Writes the applicable error to the output file.
         """
-        self.output.write(
-            "\n Test failed for file: %s.  Expected output:  %s, Received output: %s \n"
-            % (filename, expected, received) )
+        error = ("\n Test failed for file: %s  :  Expected output:  %s, Received output: %s \n"
+            % (filename, expected, received))
+        self.output.write( error )
+        print error
 
     def test_simple(self):
         """
@@ -100,9 +102,20 @@ class Tester(object):
         to increase chances of receiving SATISFIABLE and UNSATISFIABLE
         """
         for i in range (0, 20):
-            literals = random.randint(2, 20)
-            clauses = random.randint(2, 60)
+            literals = random.randint(1, 20)
+            clauses = random.randint(1, 60)
             solver = SatFileInstance(literals, clauses)
             for j in range (0,10):
                 filename = solver.create_file()
                 self.execute(filename)
+    def stress_test(self):
+        """
+        Runs a Large file.  Note:  The specifications of the assignment
+        indicate that the max for literals or clauses is 65536.  If a file of
+        this size were actually generated it would be in excess of 30 GB.  I
+        will not generate a file of that size here.  I have settled on an
+        size of approximately 300 MB.
+        """
+        solver = SatFileInstance(10000, 10000)
+        filename = solver.create_file()
+        self.execute(filename)

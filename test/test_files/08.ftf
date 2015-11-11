@@ -1,0 +1,8 @@
+c
+c Alpha Character IN LINE
+c
+c
+p cnf 5 3
+1 -a5 4 0
+-1 5 3 4 0
+-3 -4 0

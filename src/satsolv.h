@@ -10,23 +10,27 @@
 #define UNKNOWN 2
 #define ERROR 3
 #define DEBUG 1     // enables debugging output
-#define MAXLINE 256 // maximum length of a line
+#define MAXLINE 65537 // maximum length of a line
 #define MAXCLAUSES 65536 // maximum number of clauses in a formula
+#define MAXLITS 65536    // maximum number of literals in a formula
 #define SAT_STRING "SATISFIABLE\n"
 #define UNSAT_STRING "UNSATISFIABLE\n"
 #define UNKNOWN_STRING "UNKNOWN\n"
 #define ERROR_STRING "ERROR\n" // define the error string
 
+/* represents a single literal */
 typedef struct {
         unsigned short id;
         bool sign;
 } literal;
 
+/* represents a clause, which is simply a set of literals */
 typedef struct {
        unsigned short length;
        literal* lits[];
 } clause;
 
+/* represents a formula, which is just a set of clauses */
 typedef struct {
        unsigned short nvars;
        unsigned short nclauses;
@@ -55,5 +59,6 @@ formula* pre_process(FILE *fp);
 void push_stack(stack *, stack_item *);
 void pop_stack(stack *, stack_item *);
 long int convert_to_int(char *pch);
+void print_structure();
 
 #endif

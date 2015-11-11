@@ -35,8 +35,21 @@ int main(int argc, char **argv)
         return 0;
     }
 
+    /* if we have an empty file just return error */
+    fseek(fp, 0, SEEK_END);
+    if(ftell(fp) == 0) {
+        printf(ERROR_STRING);
+        exit(0);
+    } else {
+        rewind(fp);
+    }
+
     /* validate the input file */
     formula *form = pre_process(fp);
+
+    // prints the resulting structure created by the pre-processing step
+    if (DEBUG)
+        print_structure(form);
 
     /* invoke the solver and print out the result */
     int res = solve(form);
@@ -59,23 +72,32 @@ int main(int argc, char **argv)
     return 0;
 }
 
-formula* pre_process(FILE *fp) {
+formula* pre_process(FILE *fp)
+{
     char line[MAXLINE];
     int nvars = 0;
     int nclauses = 0;
     int clauseCount = 0;
-    int containsPLine = 0;
+    bool containsPLine = false;
     formula *form;
-    while (fgets(line, MAXLINE, fp) != NULL) {
-        /* Skip the comments */
+    while (fgets(line, MAXLINE, fp) != NULL)
+    {
+        /* Skip comments */
         if(line[0] == 'c') {
             continue;
         } else if (line[0] == 'p') { /* Get the nbvar and nbclause args */
-            char * pch;
-            pch = strtok (line," ");
+            /* If we already processed a p line then there are two which is ill format */
+            if(containsPLine) {
+                printf(ERROR_STRING);
+                exit(0);
+            }
+
+            char *pch;
+            pch = strtok(line," ");
             int c = 0;
-            while (pch != NULL) {
-                if(c == 1 && strcmp(pch, "cnf") != 0){
+            while (pch != NULL)
+            {
+                if (c == 1 && strcmp(pch, "cnf") != 0) {
                     printf(ERROR_STRING);
                     exit(0);
                 }
@@ -85,28 +107,34 @@ formula* pre_process(FILE *fp) {
                 if (c == 3)
                     nclauses = convert_to_int(pch);
 
-                pch = strtok (NULL, " ");
+                pch = strtok(NULL, " ");
                 c++;
             }
-            if(nvars > MAXCLAUSES || nclauses > MAXCLAUSES || c != 4){
+
+            if(nvars > MAXLITS || nclauses > MAXCLAUSES || c != 4) {
                 printf(ERROR_STRING);
                 exit(0);
             }
-            containsPLine = 1;
+
             form = malloc(sizeof(formula) + nclauses * sizeof(clause*));
             form->nvars = nvars;
             form->nclauses = nclauses;
+            containsPLine = true;
         } else { /* assume an argument clause and check its correctness */
+
+            /* if we haven't seen the p line, then the format of the file was
+               incorrect */
+            if (!containsPLine) {
+                printf(ERROR_STRING);
+                exit(0);
+            }
+
             char *var;
             long int varList[MAXLINE] = {0}; /* Initialize all values to 0 */
             int innerCount = 0;
             long int numVal;
             int litCount = 0;
-
-            if(!containsPLine){
-                printf(ERROR_STRING);
-                exit(0);
-            }
+            bool hasZero = false;
 
             /* convert line into array */
             var = strtok(line, " ");
@@ -115,13 +143,17 @@ formula* pre_process(FILE *fp) {
             var = strtok(NULL, " ");
             while(var != NULL) {
                 numVal = convert_to_int(var);
-
-                litCount++;
+                /* If there are inputs after zero it is ill formatted */
+                if(hasZero == true) {
+                    printf(ERROR_STRING);
+                    exit(0);
+                }
                 /* Account for end of line */
                 if(numVal == 0) {
-                    break;
+                    hasZero = true;
+                } else {
+                    litCount++;
                 }
-
 
                 /* If the number in the clause is not between -nbvar and nbvar then file is ill formatted */
                 if(numVal < form->nvars * -1 || numVal > form->nvars) {
@@ -130,34 +162,42 @@ formula* pre_process(FILE *fp) {
                 }
 
                 innerCount = 0;
-                while(varList[innerCount++] != 0) {
+                while(varList[innerCount] != 0) {
                     /* Cant have duplicates and can't have opposite literals i and -i simultaneously */
                     int dup = numVal == varList[innerCount];
                     int opposite_lit = (numVal*-1) == varList[innerCount];
-                    if(dup || opposite_lit) {
+                    if((dup || opposite_lit) && !hasZero) {
                         printf(ERROR_STRING);
                         exit(0);
                     }
+
+                    innerCount++;
                 }
 
                 /* Otherwise we passed all error checking for this value so add it to our list */
-                varList[innerCount-1] = numVal;
+                varList[innerCount] = numVal;
 
-                // get the next token in the clause
+                // Get the next token in the clause
                 var = strtok(NULL, " ");
             }
 
-            /*create the clause, add the literals, and then add it to the formula struct*/
-            innerCount = 0;
-            clause *c = malloc(sizeof(clause) + litCount * sizeof(literal*));
+            if(!hasZero) {
+                printf(ERROR_STRING);
+                exit(0);
+            }
+
+            /* Create the clause, add the literals, and then add it to the formula struct. */
+            clause *c = malloc(sizeof(clause) + (litCount) * sizeof(literal*));
             c->length = litCount;
 
-            while(varList[innerCount] != 0){
+            innerCount = 0;
+            while(varList[innerCount] != 0)
+            {
                 literal *l = malloc(sizeof(literal));
-                if(varList[innerCount] < 0){
+                if(varList[innerCount] < 0) {
                     l->id = varList[innerCount] * -1;
                     l->sign = true;
-                } else{
+                } else {
                     l->id = varList[innerCount];
                     l->sign = false;
                 }
@@ -166,26 +206,18 @@ formula* pre_process(FILE *fp) {
                 innerCount++;
             }
 
-            /*Make the final lit in the clause have an id of zero.  This way the solver knows when 
-            end of clause has been reached*/
-            literal *stopLit;
-            stopLit->id = 0;
-            stopLit->sign = false;
-            c->lits[innerCount] = stopLit;
-
             form->clauses[clauseCount] = c;
             clauseCount++;
         }
     }
 
-    /* If we there was *not* exactly the right amount of clauses, then the file is ill formatted */
+    /* If we there was *not* exactly the right amount of clauses, then the file is ill formatted. */
     if(clauseCount != form->nclauses) {
       printf(ERROR_STRING);
       exit(0);
     }
 
     return form;
-
 }
 
 /**
@@ -201,35 +233,33 @@ formula* pre_process(FILE *fp) {
   *
   * @arg form - A pointer to a formula structure that contains the propositional logic clauses.
   */
-int solve(formula *form)
+int solve(formula* form)
 {
-    if (DEBUG) {
-        printf("nvar (%d)\n", form->nvars);
-        printf("nclauses (%d)\n", form->nclauses);
-    }
-
-    // create the structures to store the state of the
-    // algorithm
+    /* Create the structures to store the state of the
+     * algorithm */
     bool assigned[form->nvars];
     bool vals[form->nvars];
-    stack s[form->nvars];
+    stack s;
+    stack_item* sitems[form->nvars];
+    s.items = sitems;
+    s.top = 0;
 
-    // foreach clause in formula
+    // Foreach clause in formula
     int i;
     for (i = 0; i < form->nclauses; i++) {
 
-        // if clause is a unit clause
+        // If clause is a unit clause
         literal *lp;
         if ((lp = is_unitclause(form->clauses[i], assigned, vals)) != NULL) {
             assert_literal(lp, vals, assigned);
             stack_item si = {lp, 0};
-            push_stack(s, &si);
+            push_stack(&s, &si);
             continue;
         }
         else {
-            // if all literals are assigned
+            // If all literals are assigned
             if (alllits_assigned(form->clauses[i], assigned)) {
-                // if clause satisfied
+                // If clause satisfied
                 if (clause_satisfied(form->clauses[i], vals))
                     continue;
                 else {
@@ -237,56 +267,36 @@ int solve(formula *form)
                 }
             }
             else {
-                // foreach literal
+                // Foreach literal
                 int j;
                 for(j = 0; j < form->clauses[i]->length; j++) {
-                    // if clause is a unit clause:
+                    // If clause is a unit clause:
                     if ((lp = is_unitclause(form->clauses[i], assigned, vals)) != NULL) {
                         assert_literal(lp, vals, assigned);
                         stack_item si = {lp, 0};
-                        push_stack(s, &si);
+                        push_stack(&s, &si);
                         continue;
                     }
                     else {
-                        // guess on literal if literal not assigned
+                        // Guess on literal if literal not assigned
+                        literal *lp = form->clauses[i]->lits[j];
+                        int lit_id = lp->id;
+                        if (!assigned[lit_id]) {
+                            assert_literal(lp, vals, assigned);
+                            stack_item si = {lp, 1};
+                            push_stack(&s, &si);
+                        }
                     }
                 }
             }
         }
     }
 
-    // cleanup
-
-    // otherwise the result is unknown
-    return UNKNOWN;
+    // If we get this far the assumption is that we could satisfy the formula
+    return SATISFIABLE;
 }
 
 /** HELPER FUNCTIONS **/
-
-/**
-  * Parses the propositional logic clauses in the input file into an array of clauses, where
-  * each entry in the array is an array of characters representing that clause.
-  *
-  * For example, the propositional logic formula:
-  *
-  * (a | b) & (b | c)
-  *
-  * is composed of two clauses "(a | b)" and "(b | c)". This function would return an array like so:
-  *
-  * [0] -> "(a | b)"
-  * [1] -> "(b | c)"
-  */
-void get_clauses(char *clauses[], FILE *fp)
-{
-    int i = 0;
-    char line[MAXLINE];
-    while (fgets(line, MAXLINE, fp) != NULL) {
-        if (line[0] == 'c' || line[0] == 'p')
-            continue;
-
-        strcpy(clauses[i++], strtok(line, "\n"));
-    }
-}
 
 /**
   * Returns a pointer to the remaining unsigned literal if the supplied clause
@@ -300,6 +310,11 @@ literal* is_unitclause(clause *c, bool assigned[], bool vals[])
     literal * lp;
     int assigned_cnt = 0;
     bool satisfied = 0;
+
+    /* For each literal in the clause, check if it is assigned. If the literal
+       is already assigned, then gets its appropriate value and add it to the
+       satisfied variable. Otherwise the literal remains a candidate for
+       assignment. */
     for (i = 0; i < c->length; i++) {
         if (assigned[c->lits[i]->id]) {
             bool sign = c->lits[i]->sign;
@@ -329,11 +344,14 @@ void assert_literal(literal *lp, bool vals[], bool assigned[])
     return;
 }
 
+/**
+  *
+  */
 bool alllits_assigned(clause *c, bool assigned[])
 {
 
-    // if any of the literals in the clause are not assigned,
-    // return false. otherwise return true
+    // If any of the literals in the clause are not assigned,
+    // return false. Otherwise return true
     int i;
     for (i = 0; i < c->length; i++) {
         if (!assigned[c->lits[i]->id])
@@ -343,10 +361,16 @@ bool alllits_assigned(clause *c, bool assigned[])
     return 1;
 }
 
+/**
+  * Determines if the given clause is satisfied according to the assigned values
+  * stored in the 'vals' array. If the clause is satisfied, then this function
+  * will return true. Otherwise, it will return false.
+  */
 bool clause_satisfied(clause *c, bool vals[])
 {
     bool satisfied = 0;
 
+    /* Foreach of the literals in the clause, get its corresponding assignment. */
     int i;
     for (i = 0; i < c->length; i++) {
         bool sign = c->lits[i]->sign;
@@ -357,12 +381,18 @@ bool clause_satisfied(clause *c, bool vals[])
     return satisfied;
 }
 
+/**
+  * Pushes the given stack item onto the stack supplied in the first argument.
+  */
 void push_stack(stack *sp, stack_item *item)
 {
     sp->items[sp->top] = item;
     sp->top++;
 }
 
+/**
+  * Pops the given stack item off of the stack supplied in the first argument.
+  */
 void pop_stack(stack *sp, stack_item *item)
 {
     item = sp->items[sp->top];
@@ -370,12 +400,19 @@ void pop_stack(stack *sp, stack_item *item)
 }
 
 /**
-  * Helper to convert string to long int and do error checking to make sure we have an int.
-  * If not print error and exit program
+  * Attempts to convert a string to a long int. If the string cannot be converted
+  * to an integer, this function will print an error and terminate the program.
   */
-long int convert_to_int(char * pch){
-    /*NULL check on pointer*/
+long int convert_to_int(char * pch)
+{
+    /* NULL check on pointer */
     assert(pch != 0);
+
+    if(strcmp(pch, "-0") == 0 || strcmp(pch, "-0\n") == 0) {
+        printf(ERROR_STRING);
+        exit(0);
+    }
+
     char *end = "\0";
     long int val;
     errno = 0;
@@ -387,6 +424,26 @@ long int convert_to_int(char * pch){
         exit(0);
     }
     return val;
+}
+
+/**
+  * Prints out the formula given as input. This function is primarily for
+  * debugging purposes, although it may be useful elsewhere.
+  */
+void print_structure(formula *f)
+{
+    printf("nvar (%d)\n", f->nvars);
+    printf("nclauses (%d)\n\n", f->nclauses);
+
+    int i, j;
+    for(i = 0; i < f->nclauses; i++) {
+        literal *lp;
+        for(j = 0; j < f->clauses[i]->length; j++) {
+            lp = f->clauses[i]->lits[j];
+            printf("%d ", lp->sign ? -1*(lp->id): lp->id);
+        }
+        printf("\n");
+    }
 }
 
 /** END HELPER FUNCTIONS **/

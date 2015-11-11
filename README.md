@@ -1,3 +1,32 @@
+satsolv
+=======
+satsolv is a Boolean Satisfiability (SAT) solver that parses input files given
+in the standard DIMACS format.
+
+Dependencies
+------------
+* [MiniSat](https://github.com/niklasso/minisat.git) - For differential testing.
+    * To install MiniSat, extract if from the ["extras"](extras/) directory, and follow the README.
+
+Running
+-------
+To run satsolv simply compile with make and then invoke the satsolv executable that
+is put in the `bin` directory.
+
+```
+make
+bin/satsolv <inputfile>
+```
+
+Testing
+-------
+Our test suite uses differential testing to compare the output of satsolv against
+the well known MiniSat solver. To invoke this test suite do simply invoke the `test`
+target in the Makefile.
+
+```
+make test
+```
 
 Group Members
 -------------
@@ -8,4 +37,4 @@ Group Members
 
 Todos
 -----
-* Finishing implementing and testing the `is_unitclause` function.
+* Implement "backtrack" in the solve function. See [lines 276-280](https://github.com/TeamNighthawk/sat/blob/master/src/satsolv.c#L276-L280).

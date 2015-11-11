@@ -1,0 +1,9 @@
+c I assume this one fails:
+c The numbers here are not actually numbers
+c but literal names and the heading indicates
+c that the names it can expect are 1,2,3,4,5
+c or -1,-2,-3,-4,-5
+p cnf 5 3 4
+-000000000000001 -5 4 0
+-1 5 3 4 0
+-3 -4 0
