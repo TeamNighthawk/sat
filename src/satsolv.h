@@ -38,27 +38,30 @@ typedef struct {
 } formula;
 
 typedef struct {
-        literal *lp;
+        literal *lp;       // a pointer to a literal
+        unsigned short ci; // the clause index
         bool guess;
 } stack_item;
 
 typedef struct {
     stack_item **items;
-    unsigned short top;
+    int top;
 } stack;
 
 /* Core algorithm */
 int solve(formula *);
 
 /* Helper functions */
-literal* is_unitclause(clause *, bool [], bool[]);
+literal* is_unitclause(literal*, clause *, bool [], bool[]);
 bool alllits_assigned(clause *, bool[]);
 bool clause_satisfied(clause *, bool[]);
+bool in_clause(clause*, literal*);
 void assert_literal(literal *, bool [], bool []);
 formula* pre_process(FILE *fp);
 void push_stack(stack *, stack_item *);
-void pop_stack(stack *, stack_item *);
+stack_item* pop_stack(stack *);
 long int convert_to_int(char *pch);
 void print_structure();
+void print_stack(stack *, int);
 
 #endif
