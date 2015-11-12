@@ -46,6 +46,7 @@ typedef struct {
 typedef struct {
     stack_item **items;
     int top;
+    unsigned short size;
 } stack;
 
 /* Core algorithm */
@@ -62,6 +63,6 @@ void push_stack(stack *, stack_item *);
 stack_item* pop_stack(stack *);
 long int convert_to_int(char *pch);
 void print_structure();
-void print_stack(stack *, int);
+void print_stack(stack *);
 
 #endif

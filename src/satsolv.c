@@ -243,6 +243,7 @@ int solve(formula* form)
     stack_item *sitems = (stack_item *) malloc(form->nvars * sizeof(stack_item));
     s.items = &sitems;
     s.top = -1;
+    s.size = 0;
 
     // Foreach clause in formula
     int i;
@@ -253,12 +254,9 @@ int solve(formula* form)
         if ((lp = is_unitclause(lp, form->clauses[i], assigned, vals)) != NULL) {
             assert_literal(lp, vals, assigned);
             stack_item si = {lp, i, 0};
-            if (DEBUG)
-                print_stack(&s, form->nvars + 1);
             push_stack(&s, &si);
             if (DEBUG)
-                print_stack(&s, form->nvars + 1);
-            continue;
+                print_stack(&s);
         }
         else {
             // If all literals are assigned
@@ -268,23 +266,18 @@ int solve(formula* form)
                     continue;
                 else {
                     // "backtrack"
-
-                    if (DEBUG)
-                        print_stack(&s, form->nvars + 1);
                     stack_item *item = pop_stack(&s);
                     if (DEBUG)
-                        print_stack(&s, form->nvars + 1);
+                        print_stack(&s);
                     if (item == NULL) {
                         return UNSATISFIABLE;
                     }
                     assigned[item->lp->id] = 0;
 
                     while (!in_clause(form->clauses[i], item->lp) || !item->guess) {
-                        if (DEBUG)
-                            print_stack(&s, form->nvars + 1);
                         item = pop_stack(&s);
                         if (DEBUG)
-                            print_stack(&s, form->nvars + 1);
+                            print_stack(&s);
                         if (item == NULL) {
                             return UNSATISFIABLE;
                         }
@@ -297,11 +290,9 @@ int solve(formula* form)
 
                     // flip guess
                     item->guess = 0;
-                    if (DEBUG)
-                        print_stack(&s, form->nvars + 1);
                     push_stack(&s, item);
                     if (DEBUG)
-                        print_stack(&s, form->nvars + 1);
+                        print_stack(&s);
 
                     // set the clause looping index
                     i = item->ci;
@@ -315,12 +306,9 @@ int solve(formula* form)
                     if ((lp = is_unitclause(lp, form->clauses[i], assigned, vals)) != NULL) {
                         assert_literal(lp, vals, assigned);
                         stack_item si = {lp, i, 0};
-                        if (DEBUG)
-                            print_stack(&s, form->nvars + 1);
                         push_stack(&s, &si);
                         if (DEBUG)
-                            print_stack(&s, form->nvars + 1);
-                        continue;
+                            print_stack(&s);
                     }
                     else {
                         // Guess on literal if literal not assigned
@@ -329,11 +317,9 @@ int solve(formula* form)
                         if (!assigned[lit_id]) {
                             assert_literal(lp, vals, assigned);
                             stack_item si = {lp, i, 1};
-                            if (DEBUG)
-                                print_stack(&s, form->nvars + 1);
                             push_stack(&s, &si);
                             if (DEBUG)
-                                print_stack(&s, form->nvars + 1);
+                                print_stack(&s);
                         }
                     }
                 }
@@ -394,6 +380,9 @@ bool in_clause(clause* cp, literal* lp)
     return false;
 }
 
+/**
+  * Asserts the supplied literal by assigning it the appropriate value.
+  */
 void assert_literal(literal *lp, bool vals[], bool assigned[])
 {
     if (lp->sign)
@@ -407,7 +396,8 @@ void assert_literal(literal *lp, bool vals[], bool assigned[])
 }
 
 /**
-  *
+  * Returns true if all of the literals in the given clause are assigned. False
+  * otherwise.
   */
 bool alllits_assigned(clause *c, bool assigned[])
 {
@@ -448,9 +438,11 @@ bool clause_satisfied(clause *c, bool vals[])
   */
 void push_stack(stack *sp, stack_item *item)
 {
-    printf("push sp->top (%d)\n", sp->top);
+    if (DEBUG)
+        printf("push (ID) %d (S) %d (G) %d (CI) %d\n", item->lp->id, item->lp->sign, item->guess, item->ci);
     sp->top++;
     sp->items[sp->top] = item;
+    sp->size++;
 }
 
 /**
@@ -458,12 +450,16 @@ void push_stack(stack *sp, stack_item *item)
   */
 stack_item* pop_stack(stack *sp)
 {
-    printf("pop sp->top (%d)\n", sp->top);
     if (sp->top < 0)
         return NULL;
     else {
+        if (DEBUG)
+            printf("pop (ID) %d (S) %d (G) %d (CI) %d\n", sp->items[sp->top]->lp->id, sp->items[sp->top]->lp->sign, sp->items[sp->top]->guess, sp->items[sp->top]->ci);
+
         stack_item *item = sp->items[sp->top];
         sp->top--;
+        sp->size--;
+
         return item;
     }
 }
@@ -513,19 +509,19 @@ void print_structure(formula *f)
         }
         printf("\n");
     }
+    printf("\n");
 }
 
-void print_stack(stack *sp, int numitems)
+void print_stack(stack *sp)
 {
+    printf("------STACK-------\n");
+    printf("(ID) (S) (G) (CI)\n");
     int i;
-    for (i = 0; i < numitems; i++) {
+    for (i = 0; i < sp->size; i++) {
         stack_item *si = sp->items[i];
-        printf("-------------\n");
-        printf("(ID)  (S)  (G)  (CI)\n");
-        printf("%d\n", si->lp->id);
         printf(" %d    %d   %d   %d\n", si->lp->id, si->lp->sign, si->guess, si->ci);
-        printf("-------------\n");
     }
+    printf("------------------\n\n");
 }
 
 /** END HELPER FUNCTIONS **/
