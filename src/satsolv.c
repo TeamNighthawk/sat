@@ -67,8 +67,9 @@ int main(int argc, char **argv)
             printf(ERROR_STRING);
     }
 
-    // close the input file
+    // close the input file and cleanup the resources
     fclose(fp);
+    cleanup(form);
     return 0;
 }
 
@@ -361,11 +362,29 @@ int solve(formula* form)
         }
     }
 
+    free(assigned);
+    free(vals);
+    free(sitems);
+
     // If we get this far the assumption is that we could satisfy the formula
     return SATISFIABLE;
 }
 
 /** HELPER FUNCTIONS **/
+
+void cleanup(formula *fp)
+{
+    int i, j, k;
+    for(i = 0; i < fp->nclauses; i++) {
+        for(j = 0; j < fp->clauses[i]->length; j++) {
+            free(fp->clauses[i]->lits[j]);
+        }
+        free(fp->clauses[i]);
+    }
+    free(fp);
+
+    return;
+}
 
 /**
   * Returns a pointer to the remaining unsigned literal if the supplied clause
