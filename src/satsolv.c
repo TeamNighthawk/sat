@@ -241,7 +241,7 @@ int solve(formula* form)
     bool *vals = (bool *) calloc(form->nvars + 1, sizeof(bool));
     stack s;
     stack_item *sitems = (stack_item *) malloc(form->nvars * sizeof(stack_item));
-    s.items = &sitems;
+    s.items = sitems;
     s.top = -1;
     s.size = 0;
 
@@ -250,11 +250,20 @@ int solve(formula* form)
     for (i = 0; i < form->nclauses; i++) {
 
         // If clause is a unit clause
-        literal *lp = (literal *) malloc(sizeof(literal*));
+        literal *lp = (literal *) malloc(sizeof(literal));
         if ((lp = is_unitclause(lp, form->clauses[i], assigned, vals)) != NULL) {
-            assert_literal(lp, vals, assigned);
-            stack_item si = {lp, i, 0};
-            push_stack(&s, &si);
+            // COPY THE LITERAL POINTER
+            literal *lp1 = (literal*) malloc(sizeof(literal));
+            memcpy(lp1, lp, sizeof(literal));
+
+            assert_literal(lp1, vals, assigned);
+            stack_item si = {lp1, i, 0};
+
+            // COPY THE STACK ITEM
+            stack_item *sip = (stack_item*) malloc(sizeof(stack_item));
+            memcpy(sip, &si, sizeof(stack_item));
+
+            push_stack(&s, sip);
             if (DEBUG)
                 print_stack(&s);
         }
@@ -291,6 +300,9 @@ int solve(formula* form)
                     // flip guess
                     item->guess = 0;
                     push_stack(&s, item);
+
+                    assigned[item->lp->id] = 1;
+
                     if (DEBUG)
                         print_stack(&s);
 
@@ -304,20 +316,42 @@ int solve(formula* form)
                 for(j = 0; j < form->clauses[i]->length; j++) {
                     // If clause is a unit clause:
                     if ((lp = is_unitclause(lp, form->clauses[i], assigned, vals)) != NULL) {
-                        assert_literal(lp, vals, assigned);
-                        stack_item si = {lp, i, 0};
-                        push_stack(&s, &si);
+
+                        // COPY THE LITERAL POINTER
+                        literal *lp1 = (literal*) malloc(sizeof(literal));
+                        memcpy(lp1, lp, sizeof(literal));
+
+                        assert_literal(lp1, vals, assigned);
+                        stack_item si = {lp1, i, 0};
+
+                        // COPY THE STACK ITEM
+                        stack_item *sip = (stack_item*) malloc(sizeof(stack_item));
+                        memcpy(sip, &si, sizeof(stack_item));
+
+                        push_stack(&s, sip);
+
                         if (DEBUG)
                             print_stack(&s);
                     }
                     else {
                         // Guess on literal if literal not assigned
-                        literal *lp = form->clauses[i]->lits[j];
+                        lp = form->clauses[i]->lits[j];
                         int lit_id = lp->id;
+
+                        // COPY THE LITERAL POINTER
+                        literal *lp1 = (literal*) malloc(sizeof(literal));
+                        memcpy(lp1, lp, sizeof(literal));
+
+
                         if (!assigned[lit_id]) {
-                            assert_literal(lp, vals, assigned);
-                            stack_item si = {lp, i, 1};
-                            push_stack(&s, &si);
+                            assert_literal(lp1, vals, assigned);
+                            stack_item si = {lp1, i, 1};
+
+                            // COPY THE STACK ITEM
+                            stack_item *sip = (stack_item*) malloc(sizeof(stack_item));
+                            memcpy(sip, &si, sizeof(stack_item));
+
+                            push_stack(&s, sip);
                             if (DEBUG)
                                 print_stack(&s);
                         }
@@ -515,11 +549,11 @@ void print_structure(formula *f)
 void print_stack(stack *sp)
 {
     printf("------STACK-------\n");
-    printf("(ID) (S) (G) (CI)\n");
+    printf("(ID) (S) (G) (CI) (LITADDR) (SIADDR)\n");
     int i;
     for (i = 0; i < sp->size; i++) {
         stack_item *si = sp->items[i];
-        printf(" %d    %d   %d   %d\n", si->lp->id, si->lp->sign, si->guess, si->ci);
+        printf(" %d    %d   %d   %d   %p  %p\n", si->lp->id, si->lp->sign, si->guess, si->ci, si->lp, si);
     }
     printf("------------------\n\n");
 }
