@@ -46,6 +46,7 @@ int main(int argc, char **argv)
 
     /* validate the input file */
     formula *form = pre_process(fp);
+    sort(form); // sort the clauses in the formula
 
     // prints the resulting structure created by the pre-processing step
     if (DEBUG)
@@ -69,7 +70,7 @@ int main(int argc, char **argv)
 
     // close the input file and cleanup the resources
     fclose(fp);
-    cleanup(form);
+    //cleanup(form);
     return 0;
 }
 
@@ -246,22 +247,26 @@ int solve(formula* form)
     s.top = -1;
     s.size = 0;
 
+    literal *lp;
+    literal *lp1;
+    stack_item *sip;
+
     // Foreach clause in formula
     int i;
     for (i = 0; i < form->nclauses; i++) {
 
         // If clause is a unit clause
-        literal *lp = (literal *) malloc(sizeof(literal));
-        if ((lp = is_unitclause(lp, form->clauses[i], assigned, vals)) != NULL) {
+         //lp = (literal *) malloc(sizeof(literal));
+        if ((lp = is_unitclause(&s, lp, form->clauses[i], assigned, vals)) != NULL) {
             // COPY THE LITERAL POINTER
-            literal *lp1 = (literal*) malloc(sizeof(literal));
+            lp1 = (literal*) malloc(sizeof(literal));
             memcpy(lp1, lp, sizeof(literal));
 
             assert_literal(lp1, vals, assigned);
             stack_item si = {lp1, i, 0};
 
             // COPY THE STACK ITEM
-            stack_item *sip = (stack_item*) malloc(sizeof(stack_item));
+            sip = (stack_item*) malloc(sizeof(stack_item));
             memcpy(sip, &si, sizeof(stack_item));
 
             push_stack(&s, sip);
@@ -316,17 +321,17 @@ int solve(formula* form)
                 int j;
                 for(j = 0; j < form->clauses[i]->length; j++) {
                     // If clause is a unit clause:
-                    if ((lp = is_unitclause(lp, form->clauses[i], assigned, vals)) != NULL) {
+                    if ((lp = is_unitclause(&s, lp, form->clauses[i], assigned, vals)) != NULL) {
 
                         // COPY THE LITERAL POINTER
-                        literal *lp1 = (literal*) malloc(sizeof(literal));
+                        lp1 = (literal*) malloc(sizeof(literal));
                         memcpy(lp1, lp, sizeof(literal));
 
                         assert_literal(lp1, vals, assigned);
                         stack_item si = {lp1, i, 0};
 
                         // COPY THE STACK ITEM
-                        stack_item *sip = (stack_item*) malloc(sizeof(stack_item));
+                        sip = (stack_item*) malloc(sizeof(stack_item));
                         memcpy(sip, &si, sizeof(stack_item));
 
                         push_stack(&s, sip);
@@ -340,16 +345,15 @@ int solve(formula* form)
                         int lit_id = lp->id;
 
                         // COPY THE LITERAL POINTER
-                        literal *lp1 = (literal*) malloc(sizeof(literal));
+                        lp1 = (literal*) malloc(sizeof(literal));
                         memcpy(lp1, lp, sizeof(literal));
-
 
                         if (!assigned[lit_id]) {
                             assert_literal(lp1, vals, assigned);
                             stack_item si = {lp1, i, 1};
 
                             // COPY THE STACK ITEM
-                            stack_item *sip = (stack_item*) malloc(sizeof(stack_item));
+                            sip = (stack_item*) malloc(sizeof(stack_item));
                             memcpy(sip, &si, sizeof(stack_item));
 
                             push_stack(&s, sip);
@@ -362,9 +366,15 @@ int solve(formula* form)
         }
     }
 
-    free(assigned);
-    free(vals);
-    free(sitems);
+    // Perform cleanup before returning
+    // free(assigned);
+    // free(vals);
+    // free(sitems);
+    // free(lp1);
+    //
+    // for(i = 0; i < s.size; i++) {
+    //     free(s.items[i]);
+    // }
 
     // If we get this far the assumption is that we could satisfy the formula
     return SATISFIABLE;
@@ -386,13 +396,23 @@ void cleanup(formula *fp)
     return;
 }
 
+bool is_guess(stack *sp, unsigned short id)
+{
+    int i;
+    for(i = 0; i < sp->size; i++) {
+        stack_item *si = sp->items[i];
+        if (si->lp->id == id)
+            return si->guess;
+    }
+}
+
 /**
   * Returns a pointer to the remaining unsigned literal if the supplied clause
   * is a unit clause. Null otherwise.
   *
   * sign | value | sign XOR value
   */
-literal* is_unitclause(literal *lp, clause *c, bool assigned[], bool vals[])
+literal* is_unitclause(stack *sp, literal *lp, clause *c, bool assigned[], bool vals[])
 {
     int i;
     int assigned_cnt = 0;
@@ -404,6 +424,8 @@ literal* is_unitclause(literal *lp, clause *c, bool assigned[], bool vals[])
        assignment. */
     for (i = 0; i < c->length; i++) {
         if (assigned[c->lits[i]->id]) {
+            if (is_guess(sp, c->lits[i]->id))
+                return NULL;
             bool sign = c->lits[i]->sign;
             bool value = vals[c->lits[i]->id];
             assigned_cnt++;
@@ -575,6 +597,25 @@ void print_stack(stack *sp)
         printf(" %d    %d   %d   %d   %p  %p\n", si->lp->id, si->lp->sign, si->guess, si->ci, si->lp, si);
     }
     printf("------------------\n\n");
+}
+
+int compare_clauses(const void *cp1, const void *cp2)
+{
+    unsigned short cp1_length = (*(clause **) cp1)->length;
+    unsigned short cp2_length = (*(clause **) cp2)->length;
+
+    if (cp1_length > cp2_length)
+        return 1;
+
+    if (cp1_length < cp2_length)
+        return -1;
+
+    return 0;
+}
+
+void sort(formula *fp)
+{
+    qsort(fp->clauses, fp->nclauses, sizeof(fp->clauses[0]), compare_clauses);
 }
 
 /** END HELPER FUNCTIONS **/

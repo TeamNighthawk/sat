@@ -3,7 +3,7 @@ bin_dir = bin
 test_dir = test
 test_files_dir = test/test_files
 
-all: clean
+all:
 	gcc -g -o ${bin_dir}/satsolv ${src_dir}/satsolv.c
 
 test: clean all

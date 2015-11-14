@@ -80,7 +80,7 @@ class Tester(object):
         for file in os.listdir(path):
             self.sat_args = ['../bin/satsolv', path + file]
             result = self.worker(False)
-            if file.endswith(".ftf"):                
+            if file.endswith(".ftf"):
                 if self.err not in result:
                     self.write_error(file, 'ERROR', result)
             elif file.endswith(".ptf"):
