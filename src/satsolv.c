@@ -313,7 +313,7 @@ int solve(formula* form)
                         print_stack(&s);
 
                     // set the clause looping index
-                    i = item->ci;
+                    i = (item->ci) - 1;
                 }
             }
             else {
