@@ -116,6 +116,6 @@ class Tester(object):
         will not generate a file of that size here.  I have settled on an
         size of approximately 300 MB.
         """
-        solver = SatFileInstance(10000, 10000)
+        solver = SatFileInstance(1000, 1000)
         filename = solver.create_file()
         self.execute(filename)

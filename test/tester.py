@@ -14,4 +14,4 @@ if __name__ == "__main__":
     TESTER = Tester()
     TESTER.test_io()
     TESTER.test_simple()
-    #TESTER.stress_test()
+    TESTER.stress_test()
