@@ -241,8 +241,9 @@ int solve(formula* form)
      * algorithm */
     bool *assigned = (bool *) calloc(form->nvars + 1, sizeof(bool));
     bool *vals = (bool *) calloc(form->nvars + 1, sizeof(bool));
-    stack s;
     stack_item **sitems = (stack_item **) malloc(form->nvars * sizeof(stack_item*));
+
+    stack s;
     s.items = sitems;
     s.top = -1;
     s.size = 0;
@@ -253,10 +254,9 @@ int solve(formula* form)
 
     // Foreach clause in formula
     int i;
-    for (i = 0; i < form->nclauses; i++) {
-
+    for (i = 0; i < form->nclauses; i++)
+    {
         // If clause is a unit clause
-         //lp = (literal *) malloc(sizeof(literal));
         if ((lp = is_unitclause(&s, lp, form->clauses[i], assigned, vals)) != NULL) {
             // COPY THE LITERAL POINTER
             lp1 = (literal*) malloc(sizeof(literal));
@@ -277,9 +277,7 @@ int solve(formula* form)
             // If all literals are assigned
             if (alllits_assigned(form->clauses[i], assigned)) {
                 // If clause satisfied
-                if (clause_satisfied(form->clauses[i], vals))
-                    continue;
-                else {
+                if (!clause_satisfied(form->clauses[i], vals)) {
                     // "backtrack"
                     stack_item *item = pop_stack(&s);
                     if (DEBUG)
@@ -369,9 +367,8 @@ int solve(formula* form)
     // Perform cleanup before returning
     free(assigned);
     free(vals);
-    free(lp1);
 
-
+    // Cleanup any remaining items on the stack
     for(i = 0; i < s.size; i++) {
         free(s.items[i]);
     }
@@ -382,6 +379,10 @@ int solve(formula* form)
 
 /** HELPER FUNCTIONS **/
 
+/**
+  * Cleans up all of the memory allocated for the formula supplied
+  * to this solver.
+  */
 void cleanup(formula *fp)
 {
     int i, j;
@@ -392,8 +393,6 @@ void cleanup(formula *fp)
         free(fp->clauses[i]);
     }
     free(fp);
-
-    return;
 }
 
 bool is_guess(stack *sp, unsigned short id)
@@ -429,8 +428,9 @@ literal* is_unitclause(stack *sp, literal *lp, clause *c, bool assigned[], bool 
             assigned_cnt++;
             satisfied |= (sign ^ value);
         }
-        else
+        else {
             lp = c->lits[i];
+        }
     }
 
     if (assigned_cnt != (c->length - 1))
