@@ -289,7 +289,7 @@ int solve(formula* form)
                     }
                     assigned[item->lp->id] = 0;
 
-                    while (!in_clause(form->clauses[i], item->lp) || !item->guess) {
+                    while (!item->guess) {
                         item = pop_stack(&s);
                         if (DEBUG)
                             print_stack(&s);
@@ -424,8 +424,6 @@ literal* is_unitclause(stack *sp, literal *lp, clause *c, bool assigned[], bool 
        assignment. */
     for (i = 0; i < c->length; i++) {
         if (assigned[c->lits[i]->id]) {
-            if (is_guess(sp, c->lits[i]->id))
-                return NULL;
             bool sign = c->lits[i]->sign;
             bool value = vals[c->lits[i]->id];
             assigned_cnt++;
