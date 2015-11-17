@@ -70,7 +70,7 @@ int main(int argc, char **argv)
 
     // close the input file and cleanup the resources
     fclose(fp);
-    //cleanup(form);
+    cleanup(form);
     return 0;
 }
 
@@ -242,7 +242,7 @@ int solve(formula* form)
     bool *assigned = (bool *) calloc(form->nvars + 1, sizeof(bool));
     bool *vals = (bool *) calloc(form->nvars + 1, sizeof(bool));
     stack s;
-    stack_item *sitems = (stack_item *) malloc(form->nvars * sizeof(stack_item));
+    stack_item **sitems = (stack_item **) malloc(form->nvars * sizeof(stack_item*));
     s.items = sitems;
     s.top = -1;
     s.size = 0;
@@ -367,14 +367,14 @@ int solve(formula* form)
     }
 
     // Perform cleanup before returning
-    // free(assigned);
-    // free(vals);
-    // free(sitems);
-    // free(lp1);
-    //
-    // for(i = 0; i < s.size; i++) {
-    //     free(s.items[i]);
-    // }
+    free(assigned);
+    free(vals);
+    free(lp1);
+
+
+    for(i = 0; i < s.size; i++) {
+        free(s.items[i]);
+    }
 
     // If we get this far the assumption is that we could satisfy the formula
     return SATISFIABLE;
@@ -384,7 +384,7 @@ int solve(formula* form)
 
 void cleanup(formula *fp)
 {
-    int i, j, k;
+    int i, j;
     for(i = 0; i < fp->nclauses; i++) {
         for(j = 0; j < fp->clauses[i]->length; j++) {
             free(fp->clauses[i]->lits[j]);

@@ -15,10 +15,12 @@ class Tester(object):
     It relies on threading to simultaneously run the oracle (minisat) and the
     satsolver program.
     """
-    def __init__(self):
+    def __init__(self, nvars, nclauses):
         """
         Initialize the tester instance
         """
+        self.nvars = nvars
+        self.nclauses = nclauses
         self.output = open("test_results.txt", 'a')
         self.output.write("Test Run for : %s \n" % datetime.datetime.utcnow())
         self.sat = "SATISFIABLE\n"
@@ -28,6 +30,7 @@ class Tester(object):
         self.pool = ThreadPool(processes=2) #only two processes are ever running at a time
         self.oracle_args = []
         self.sat_args = []
+
     def worker(self, is_oracle):
         """
         This is the thread worker function.
@@ -41,6 +44,7 @@ class Tester(object):
         (out, err) = command_process.communicate()
         exit_code = command_process.wait()
         return out
+
     def execute(self, filename):
         """
         Executes the threads and compares results.
@@ -54,15 +58,17 @@ class Tester(object):
         to do this I used class variables to communicate the argument list
         to the worker.
         """
+
         self.oracle_args = ['minisat', filename, '-verb=0']
         self.sat_args = ['../bin/satsolv', filename]
         oracle = self.pool.apply_async(self.worker, (True,))
         sat = self.pool.apply_async(self.worker, (False,))
-        #wait for both to finish and compare results
+
+        # Wait for the oracle and for our solver to finish and compare results
         oracle_result = oracle.get()
         sat_result = sat.get()
-        #minisat prints warning periodically, I only care about the satisfiability
-        #UNSATISFIABLE must be checked first!
+
+        # MiniSat prints warnings periodically. UNSATISFIABLE must be checked first!
         if self.unsat in oracle_result:
             oracle_result = self.unsat
         elif self.sat in oracle_result:
@@ -71,6 +77,7 @@ class Tester(object):
             print "Test Passes for file:  %s" % filename
         else:
             self.write_error(filename, oracle_result, sat_result)
+
     def test_io(self):
         """
         Tests a variety of different files with good(.ptf) and
@@ -87,27 +94,27 @@ class Tester(object):
                 if self.err in result or 'UNKNOWN' in result:
                     self.write_error(file, 'SATISFIABLE | UNSATISFIABLE', result)
 
-    def write_error(self, filename, expected, received):
-        """
-        Writes the applicable error to the output file.
-        """
-        error = ("\n Test failed for file: %s  :  Expected output:  %s, Received output: %s \n"
-            % (filename, expected, received))
-        self.output.write( error )
-        print error
-
     def test_simple(self):
         """
         Runs the simple tests, on small files.  Runs several versions of each type of file
         to increase chances of receiving SATISFIABLE and UNSATISFIABLE
         """
-        for i in range (0, 20):
-            literals = random.randint(1, 20)
-            clauses = random.randint(1, 60)
+        for i in range(0, 20):
+            literals = random.randint(1, self.nvars)
+            clauses = random.randint(1, self.nclauses)
             solver = SatFileInstance(literals, clauses)
             for j in range (0,10):
                 filename = solver.create_file()
                 self.execute(filename)
+
+    def run_benchmarks(self):
+        """
+        Runs the sat competition benchmarks in the benchmarks directory.
+        """
+        path = "benchmarks/"
+        for benchmark in os.listdir(path):
+            self.execute(benchmark)
+
     def stress_test(self):
         """
         Runs a Large file.  Note:  The specifications of the assignment
@@ -119,3 +126,12 @@ class Tester(object):
         solver = SatFileInstance(1000, 1000)
         filename = solver.create_file()
         self.execute(filename)
+
+    def write_error(self, filename, expected, received):
+        """
+        Writes the applicable error to the output file.
+        """
+        error = ("\n Test failed for file: %s  :  Expected output:  %s, Received output: %s \n"
+            % (filename, expected, received))
+        self.output.write( error )
+        print error
