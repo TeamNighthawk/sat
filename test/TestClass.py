@@ -63,7 +63,6 @@ class Tester(object):
         self.sat_args = ['../bin/satsolv', filename]
         oracle = self.pool.apply_async(self.worker, (True,))
         sat = self.pool.apply_async(self.worker, (False,))
-
         # Wait for the oracle and for our solver to finish and compare results
         oracle_result = oracle.get()
         sat_result = sat.get()
@@ -113,7 +112,7 @@ class Tester(object):
         """
         path = "benchmarks/"
         for benchmark in os.listdir(path):
-            self.execute(benchmark)
+            self.execute(path + benchmark)
 
     def stress_test(self):
         """
