@@ -4,6 +4,9 @@
 test/test_files
 test/test_results.txt
 
+# Ignore compiled Python files
+*.pyc
+
 # Compiled by us
 satsolv
 

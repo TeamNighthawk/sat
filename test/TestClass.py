@@ -99,7 +99,7 @@ class Tester(object):
         Runs the simple tests, on small files.  Runs several versions of each type of file
         to increase chances of receiving SATISFIABLE and UNSATISFIABLE
         """
-        for i in range(0, 20):
+        for i in range(0, 100):
             literals = random.randint(1, self.nvars)
             clauses = random.randint(1, self.nclauses)
             solver = SatFileInstance(literals, clauses)

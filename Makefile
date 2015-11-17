@@ -3,8 +3,13 @@ bin_dir = bin
 test_dir = test
 test_files_dir = test/test_files
 
-all:
-	gcc -g -o ${bin_dir}/satsolv ${src_dir}/satsolv.c
+all: executable
+
+debug: CCFLAGS += -DDEBUG -g
+debug: executable
+
+executable:
+	gcc ${CCFLAGS} -o ${bin_dir}/satsolv ${src_dir}/satsolv.c
 
 test: clean all
 	python ${test_dir}/tester.py

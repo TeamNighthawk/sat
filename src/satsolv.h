@@ -9,7 +9,9 @@
 #define UNSATISFIABLE 1
 #define UNKNOWN 2
 #define ERROR 3
+#ifndef DEBUG
 #define DEBUG 0     // enables debugging output
+#endif
 #define MAXLINE 65537 // maximum length of a line
 #define MAXCLAUSES 65536 // maximum number of clauses in a formula
 #define MAXLITS 65536    // maximum number of literals in a formula
@@ -44,23 +46,23 @@ typedef struct {
 } stack_item;
 
 typedef struct {
-    stack_item **items;
+    stack_item *items;
     int top;
     unsigned short size;
 } stack;
 
-/* Core algorithm */
+/* Core processing and algorithm */
+formula* pre_process(FILE *);
 int solve(formula *);
 
 /* Helper functions */
-literal* is_unitclause(stack *, literal*, clause *, bool [], bool[]);
+literal* is_unitclause(clause *, bool [], bool[]);
 bool alllits_assigned(clause *, bool[]);
 bool clause_satisfied(clause *, bool[]);
 bool in_clause(clause*, literal*);
 void assert_literal(literal *, bool [], bool []);
-formula* pre_process(FILE *);
-void push_stack(stack *, stack_item *);
-stack_item* pop_stack(stack *);
+void push_stack(stack *, stack_item);
+stack_item pop_stack(stack *);
 long int convert_to_int(char *);
 void print_structure();
 void print_stack(stack *);
