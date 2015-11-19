@@ -3,6 +3,7 @@ This module contains the class that will build and run the tests on satsolv
 Author: Dustin Jay Tuckett u0204088
 """
 from multiprocessing.pool import ThreadPool
+from multiprocessing import TimeoutError
 from FileCreator import SatFileInstance
 from subprocess import Popen, PIPE
 from timeit import default_timer
@@ -23,7 +24,8 @@ class Tester(object):
         self.nvars = nvars
         self.nclauses = nclauses
         self.output = open("test_results.txt", 'a')
-        self.timeFile = open("time_file.txt", 'a');
+        self.timeFile = open("time_file.txt", 'a')
+        self.timeout = 300;
         self.output.write("Test Run for : %s \n" % datetime.datetime.utcnow())
         self.sat = "SATISFIABLE\n"
         self.unsat = "UNSATISFIABLE\n"
@@ -68,7 +70,10 @@ class Tester(object):
         # Wait for the oracle and for our solver to finish and compare results
         oracle_result = oracle.get()
         start = default_timer()
-        sat_result = sat.wait(300)
+        try:
+            sat_result = sat.get(timeout=self.timeout)
+        except TimeoutError:
+            sat_result = 'timeout'
         duration = default_timer() - start
         
 
@@ -83,6 +88,7 @@ class Tester(object):
         else:
             self.write_error(filename, oracle_result, sat_result)
             self.write_time(filename, duration, False)
+
 
     def test_io(self):
         """
@@ -144,9 +150,11 @@ class Tester(object):
 
     def write_time(self, filename, time, isPass):
         if isPass:
-            string = ("\n PASS for file:            %s    :    TIME(min): %f \n" % (filename, time/60))
+            string = ("\n PASS for file:       %s    :    TIME(min): %f \n" % (filename, time/60))
+        elif not isPass and time > self.timeout:
+            string = ("\n TIMEOUT for file:    %s    :    TIME(min): %f \n" % (filename, time/60))
         else:
-            string = ("\n FAIL OR TIMEOUT for file: %s    :    TIME(min): %f \n" % (filename, time/60))
+            string = ("\n FAIL for file:       %s    :    TIME(min): %f \n" % (filename, time/60))
 
         self.timeFile.write(string)
         print string
