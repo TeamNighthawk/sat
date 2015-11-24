@@ -37,4 +37,3 @@ Group Members
 
 Todos
 -----
-* Implement "backtrack" in the solve function. See [lines 276-280](https://github.com/TeamNighthawk/sat/blob/master/src/satsolv.c#L276-L280).
