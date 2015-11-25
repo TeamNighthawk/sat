@@ -97,7 +97,7 @@ formula* pre_process(FILE *fp)
             char *pch;
             pch = strtok(line," ");
             int c = 0;
-            while (pch != NULL)
+            while (pch != NULL && strcmp(pch, "\n") != 0)
             {
                 if (c == 1 && strcmp(pch, "cnf") != 0) {
                     printf(ERROR_STRING);
@@ -112,7 +112,7 @@ formula* pre_process(FILE *fp)
                 pch = strtok(NULL, " ");
                 c++;
             }
-
+	    /*c will equal 4 due to the newline character*/
             if(nvars > MAXLITS || nclauses > MAXCLAUSES || c != 4) {
                 printf(ERROR_STRING);
                 exit(0);
@@ -143,7 +143,7 @@ formula* pre_process(FILE *fp)
             varList[0] = convert_to_int(var);
             litCount++;
             var = strtok(NULL, " ");
-            while(var != NULL) {
+            while(var != NULL && strcmp(var, "\n") != 0) {
                 numVal = convert_to_int(var);
                 /* If there are inputs after zero it is ill formatted */
                 if(hasZero == true) {
