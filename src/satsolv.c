@@ -272,6 +272,8 @@ int solve(formula* form)
             push_stack(&s, sip);
             if (DEBUG)
                 print_stack(&s);
+
+	    free(lp1);
         }
         else {
             // If all literals are assigned
@@ -336,6 +338,8 @@ int solve(formula* form)
 
                         if (DEBUG)
                             print_stack(&s);
+
+			free(lp1);
                     }
                     else {
                         // Guess on literal if literal not assigned
@@ -358,6 +362,7 @@ int solve(formula* form)
                             if (DEBUG)
                                 print_stack(&s);
                         }
+			free(lp1);
                     }
                 }
             }
@@ -367,11 +372,14 @@ int solve(formula* form)
     // Perform cleanup before returning
     free(assigned);
     free(vals);
+    //free(lp1);
 
     // Cleanup any remaining items on the stack
     for(i = 0; i < s.size; i++) {
         free(s.items[i]);
     }
+
+    free(sitems);
 
     // If we get this far the assumption is that we could satisfy the formula
     return SATISFIABLE;
